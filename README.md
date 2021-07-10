@@ -2,6 +2,8 @@
 
 s7 is a Scheme interpreter.
 
+**IMPORTANT**: [This](https://github.com/mobileink/s7) is a fork of https://cm-gitlab.stanford.edu/bil/s7. Its only purpose is to serve as a place to keep manpages (derived from `s7.h`).
+
 [documentation](https://ccrma.stanford.edu/software/snd/snd/s7.html)
 
 [git repository](https://cm-gitlab.stanford.edu/bil/s7.git)
