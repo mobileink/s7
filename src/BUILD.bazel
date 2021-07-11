@@ -1,0 +1,80 @@
+# load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+###########
+cc_library(
+    name  = "s7",
+    linkstatic = 0,
+    srcs  = ["s7.c", "mus-config.h"],
+    hdrs  = ["s7.h"],
+    copts = select({
+        # "//:macos": ["-std=c11"],
+        # "//:linux": ["-std=gnu11"],
+        "//conditions:default": ["-std=c11"],
+    }) + [
+        # "-pedantic-errors",
+        # "-Wextra",
+        "-I$(GENDIR)/src"
+    ],
+    linkopts = select({
+        # "//:macos": ["-std=c11"],
+        # "//:linux": ["-std=gnu11"],
+        "//conditions:default": []
+    }) + ["-lm"],
+    visibility = ["//visibility:public"]
+)
+
+##########
+## linux: gcc -o repl repl.c s7.o -Wl,-export-dynamic -lm -I. -ldl
+cc_binary(
+    name  = "repl",
+    srcs  = ["s7.c", "mus-config.h"],
+    copts = select({
+        # "//:bsd": ["-std=c11"],
+        "//:macos": ["-std=c11"],
+        "//:linux": [
+            "-std=c11",
+            "-Wl,export-dynamic",
+            ],
+        # "//:linux_clang": [
+        #     "-std=c11",
+        #     "-fPIC",
+        #     "-Wl,export-dynamic",
+        #     ],
+        "//conditions:default": ["-std=c11"],
+    }) + [
+        # "-pedantic-errors",
+        # "-Wextra",
+        "-O2", "-g",
+        "-I$(GENDIR)/src"
+    ],
+    defines = ["WITH_MAIN"],
+    deps = [":s7"],
+    linkopts = select({
+        # "//:bsd": ["-Wl,-export-dynamic"],
+        "//:macos": [],
+        "//:linux": ["-ldl", "-Wl,-export-dynamic"],
+        # "//:linux_clang": ["-ldl", "-Wl,-export-dynamic"],
+        "//conditions:default": []
+    }) + [
+        "-lm",
+    ],
+    visibility = ["//visibility:public"]
+)
+
+genrule(
+    name = "mus-config",
+    outs = ["mus-config.h"],
+    cmd = "touch $@"
+)
+
+
+##########
+## nrepl depends on notcurses, which is yet another big hairy lib
+# cc_binary(
+#     name  = "nrepl",
+#     srcs  = ["nrepl.c", "notcurses_s7.c", "s7.h"],
+#     deps = [
+#         ":s7"
+#     ],
+#     visibility = ["//visibility:public"]
+# )
