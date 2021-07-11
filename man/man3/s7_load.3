@@ -1,0 +1,45 @@
+.Dd July 10, 2021
+.Dt S7 3
+.Sh NAME
+.Nm S7
+.Nd Load interface
+.Sh LIBRARY
+libs7, -ls7
+.Sh SYNOPSIS
+.In s7.h
+.Ft s7_pointer
+.Fn s7_load "s7_scheme *sc, const char *file"
+.Ft s7_pointer
+.Fn s7_load_with_environment "s7_scheme *sc, const char *filename, s7_pointer e"
+.Ft s7_pointer
+.Fn s7_load_c_string "s7_scheme *sc, const char *content, s7_int bytes"
+.Ft s7_pointer
+.Fn s7_load_c_string_with_environment "s7_scheme *sc, const char *content, s7_int bytes, s7_pointer e"
+.Ft s7_pointer
+.Fn s7_load_path "s7_scheme *sc"
+.Ft s7_pointer
+.Fn s7_add_to_load_path "s7_scheme *sc, const char *dir"
+.Ft s7_pointer
+.Fn s7_autoload "s7_scheme *sc, s7_pointer symbol, s7_pointer file_or_function"
+.Ft void
+.Fn s7_autoload_set_names "s7_scheme *sc, const char **names, s7_int size" snd-xref.c
+.Sh DESCRIPTION
+s7_load is similar to the scheme-side load function. Its argument is a file name, and optionally (via s7_load_with_environment) an environment in which to place top-level objects. Normally the file contains scheme code, but if WITH_C_LOADER is set when s7 is built, you can also load shared-object files. If you load a shared-object file (a dynamically loadable library), the environment argument provides a way to pass in the initialization function (named 'init_func). For example, the repl in s7.c needs access to libc's tcsetattr, so it looks for libc_s7.so (created by libc.scm). If found,
+.Sh EXAMPLES
+You can also include an 'init_args field to pass arguments to init_func. Here's an example that includes init_args:
+.Bd -literal -offset indent
+verbatim code here...
+.Ed
+.Pp
+.Sh SEE ALSO
+.Xr s7_c_objects 3 ,
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support

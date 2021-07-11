@@ -1,0 +1,79 @@
+.Dd July 10, 2021
+.Dt S7 3
+.Sh NAME
+.Nm S7
+.Nd Pointer interface
+.Sh LIBRARY
+libs7, -ls7
+.Sh SYNOPSIS
+.In s7.h
+.Ft bool
+.Fn s7_is_c_pointer "s7_pointer arg"
+.Ft bool
+.Fn s7_is_c_pointer_of_type "s7_pointer arg, s7_pointer type"
+.Ft void
+.Fn *s7_c_pointer "s7_pointer p"
+.Ft void
+.Fn *s7_c_pointer_with_type "s7_scheme *sc, s7_pointer p, s7_pointer expected_type, const char *caller, s7_int argnum"
+.Ft s7_pointer
+.Fn s7_c_pointer_type "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_make_c_pointer "s7_scheme *sc, void *ptr"
+.Ft s7_pointer
+.Fn s7_make_c_pointer_with_type "s7_scheme *sc, void *ptr, s7_pointer type, s7_pointer info"
+.Sh DESCRIPTION
+An
+.Em s7_pointer
+is a Scheme object of any (Scheme) type; such "pointers" are used throughout the API.  A "c-pointer" is not a genuine pointer, but an encapsulation of a C pointer: an
+.EM s7_pointer
+representing a c-pointer. It follows that there is no distinct c-pointer data type.
+.Pp
+The functions documented on this page are equivalent to s7's
+.Em c-pointer? ,
+.Em c-pointer ,
+and
+.Em c-pointer-type .
+C-pointers in s7 are aimed primarily at passing uninterpreted C pointers through s7 from one C function to another. The "type" field can hold a type indication, useful in debugging.
+Nothing else in s7 assumes the type field is actually a type symbol, so you can use the type and info fields for any purpose.
+.Pp
+.Pp
+.Fn s7_is_c_pointer
+Returns
+.Em true
+if
+.Em arg
+is a c-pointer.  Scheme:
+.Em (c-pointer? arg)
+.Pp
+.Fn s7_is_c_pointer_of_type
+.Fn s7_is_c_pointer_of_type
+checks that the c-pointer's type field matches the type passed as the second argument.
+.Pp
+.Fn *s7_c_pointer
+Converts an
+.Em s7_pointer
+to a c-pointer.
+.Pp
+.Fn *s7_c_pointer_with_type
+As a convenience, s7_c_pointer_with_type combines s7_c_pointer with s7_is_c_pointer_of_type, calling s7_error if the types don't match.
+.Pp
+.Fn s7_c_pointer_type
+.Pp
+.Fn s7_make_c_pointer
+For passing uninterpreted C pointers through Scheme.
+.Pp
+.Fn s7_make_c_pointer_with_type
+For passing uninterpreted C pointers through Scheme.
+.Pp
+.Sh SEE ALSO
+.Xr s7_c_objects 3 ,
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support
