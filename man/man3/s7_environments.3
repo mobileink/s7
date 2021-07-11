@@ -1,0 +1,253 @@
+.Dd July 10, 2021
+.Dt S7 3
+.Sh NAME
+.Nm S7
+.Nd Environments
+.Sh LIBRARY
+libs7, -ls7
+.Sh SYNOPSIS
+.In s7.h
+.Ft s7_pointer
+.Fn s7_rootlet "s7_scheme *sc"
+.Ic (rootlet)
+.Ft s7_pointer
+.Fn s7_shadow_rootlet "s7_scheme *sc"
+.Ft s7_pointer
+.Fn s7_set_shadow_rootlet "s7_scheme *sc, s7_pointer let"
+.Ft s7_pointer
+.Fn s7_curlet "s7_scheme *sc"
+.Ic (curlet)
+.Ft s7_pointer
+.Fn s7_set_curlet "s7_scheme *sc, s7_pointer env"
+.Ft s7_pointer
+.Fn s7_outlet "s7_scheme *sc, s7_pointer env"
+.Ic (outlet env)
+.Ft s7_pointer
+.Fn s7_inlet "s7_scheme *sc, s7_pointer bindings"
+.Ic (inlet bindings)
+.Ft s7_pointer
+.Fn s7_sublet "s7_scheme *sc, s7_pointer env, s7_pointer bindings"
+.Ic (sublet env ...)
+.Ft s7_pointer
+.Fn s7_varlet "s7_scheme *sc, s7_pointer env, s7_pointer symbol, s7_pointer value"
+.Ic (varlet env symbol value)
+.Ft s7_pointer
+.Fn s7_let_to_list "s7_scheme *sc, s7_pointer env"
+.Ic (let->list env)
+.Ft bool
+.Fn s7_is_let "s7_pointer e"
+.Ic (let? e)
+.Ft s7_pointer
+.Fn s7_let_ref "s7_scheme *sc, s7_pointer env, s7_pointer sym"
+.Ic (let-ref e sym)
+.Ft s7_pointer
+.Fn s7_let_set "s7_scheme *sc, s7_pointer env, s7_pointer sym, s7_pointer val"
+.Pp
+.Sm off
+.Em (
+.Ic let-set!
+.Sm on
+.Em env sym
+.Sm off
+.Em val
+)
+.Sm on
+.Ft s7_pointer
+.Fn s7_openlet "s7_scheme *sc, s7_pointer env"
+.Pp
+.Sm off
+.Em (
+.Ic openlet
+
+.Em env
+)
+.Sm on
+.Ft bool
+.Fn s7_is_openlet "s7_pointer env"
+.Pp
+.Sm off
+.Em (
+.Ic openlet?
+
+.Em env
+)
+.Sm on
+.Ft s7_pointer
+.Fn s7_method "s7_scheme *sc, s7_pointer obj, s7_pointer method"
+.Ic *s7*
+.Ft s7_pointer
+.Fn s7_let_field_ref "s7_scheme *sc, s7_pointer sym"
+.Pp
+.Sm off
+.Em (
+.Ic *s7*
+
+.Em sym
+)
+.Sm on
+.Ft s7_pointer
+.Fn s7_let_field_set "s7_scheme *sc, s7_pointer sym, s7_pointer new_value"
+.Pp
+.Sm off
+.Em (
+.Ic set!
+.Sm on
+.Em (*s7*
+.Em sym)
+.Em new_value
+)
+.Sh DESCRIPTION
+.Sm on
+.Fn s7_rootlet
+returns the top-level (global) environment. Scheme:
+.Em (rootlet)
+.Pp
+.Fn s7_shadow_rootlet
+is a convenience for foreign function writers -- the C code can act as if it were loading everything into
+.Em rootlet ,
+but when actually loaded, everything can be shunted into a separate namespace (*motif* for example).
+.Pp
+.Fn s7_set_shadow_rootlet
+sets
+.Em let
+as the new shadow-rootlet and returns the previous one.
+Use this to import the current
+.Em let
+into
+.Em rootlet.
+.Pp
+.Fn s7_curlet
+returns the current (innermost) environment.  Scheme:
+.Em (curlet)
+.Pp
+.Fn s7_set_curlet
+Scheme: ?
+.Pp
+.Fn s7_outlet
+returns the environment that encloses the environment
+.Em env
+(settable)
+Scheme:
+.Em (outlet env)
+.Pp
+.Fn s7_inlet
+makes a new environment with the given bindings.
+Scheme:
+.Em (inlet bindings)
+.Pp
+.Fn s7_sublet
+same as inlet, but the new environment is local to
+.Em env
+Scheme:
+.Em (sublet env
+.Em . bindings)
+.Pp
+.Fn s7_varlet
+adds new
+.Em bindings
+directly to
+.Em env ,
+where bindings means ??
+Scheme:
+.Em (varlet env
+.Em . bindings)
+where bindings = ?
+.Pp
+.Fn s7_let_to_list
+returns the
+.Em env
+bindings as a list of
+.Em (symbol
+.Em . value)
+cons's.
+Scheme:
+.Em (let->list env)
+.Pp
+.Fn s7_is_let
+Scheme:
+.Ic (let? env)
+.Pp
+.Fn s7_let_ref
+Scheme:
+.Ic (let-ref env sym)
+.Pp
+.Fn s7_let_set
+Scheme:
+.Sm off
+.Em (
+.Ic let-set!
+.Sm on
+.Em env sym
+.Sm off
+.Em val
+)
+.Sm on
+.Pp
+.Fn s7_openlet
+marks
+.Em env
+as open.
+Scheme:
+.Sm off
+.Em (
+.Ic openlet
+
+.Em env
+)
+.Sm on
+.Pp
+.Fn s7_is_openlet "s7_pointer env"
+returns #T if
+.Env env
+is open.
+Scheme:
+.Sm off
+.Em (
+.Ic openlet?
+
+.Em env
+)
+.Sm on
+.Pp
+.Fn s7_method "s7_scheme *sc, s7_pointer obj, s7_pointer method"
+.Ic *s7*
+.Pp
+.Fn s7_let_field_ref
+Scheme:
+.Sm off
+.Em (
+.Ic *s7*
+
+.Em sym
+)
+.Sm on
+.Pp
+.Fn s7_let_field_set
+Scheme:
+.Sm off
+.Em (
+.Ic set!
+.Sm on
+.Em (*s7*
+.Em sym)
+.Em new_value
+)
+.Sm
+.Sh EXAMPLES
+.Bd -literal -offset indent
+verbatim code here...
+.Ed
+.Pp
+.Sh SEE ALSO
+.Xr s7_c_object_let 3 ,
+.Xr s7_c_object_set_let 3
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support
