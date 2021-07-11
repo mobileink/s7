@@ -68,14 +68,36 @@
 
 .Sh DESCRIPTION
 These functions create and configure new Scheme types and objects.
+C-objects in Scheme usually correspond to an instance of a struct in C which you want to access from Scheme. The normal sequence is:
+.Bl -enum --offset indent
+.It
+define a new c-type via
+.Fn s7_make_c_type
+.It
+call type configuration functions (e.g.
+.Fn s7_c_type_set_length ,
+.Fn s7_c_type_set_is_equal ,
+etc.) to specialize the behavior of objects of the c-type
+.It
+call
+.Fn s7_make_c_object
+to wrap a C struct as man object of the c-type.
+.El
+.Pp
+.Fn s7_make_c_type "s7_scheme *sc, const char *name"
+Creates a new C-based type
+.Em name
+for Scheme.  Takes an arbitrary name string, used by object->string to identify the type, and returns an
+.Em s7_int ,
+the type "tag" used to indentify this type in many of the other functions.
 .Pp
 .Fn s7_is_c_object "s7_pointer p"
 Returns true if
 .Em p
-is a c_object
+is a c-object
 .Pp
 .Fn s7_c_object_type
-Returns the c_object's
+Returns the c-bject's
 .Em type
 (the
 .Em s7_int
@@ -95,6 +117,10 @@ of
 .Sm on
 .Pp
 .Fn *s7_c_object_value_checked
+Like
+.F s7_c_object_value ,
+but it first checks that the object type matches the given
+.Em type .
 .Pp
 .Fn s7_make_c_object "s7_scheme *sc, s7_int type, void *value"
 Creates a new Scheme entity of the given
@@ -102,36 +128,43 @@ Creates a new Scheme entity of the given
 with the given (uninterpreted)
 .Em value
 .Pp
-.Fn s7_make_c_object_with_let "s7_scheme *sc, s7_int type, void *value, s7_pointer let"
+.Fn s7_make_c_object_with_let
 .Pp
 .Fn s7_make_c_object_without_gc
+Makes a c-object of the given type, but the
+.Em gc_free
+function (configured by
+.Fn s7_c_type_set_gc_free ? )
+won't be called when the
+.Em s7_cell
+that holds the C data is freed for reuse.
 .Pp
-.Fn s7_make_c_type "s7_scheme *sc, const char *name"
-Creates a new C-based type
-.Em name
-for Scheme.
-It returns an
-.Em s7_int
-"tag" used to indentify this type elsewhere.
+.Fn s7_c_object_let
+.Pp
+.Fn s7_c_object_set_let
+s7_c_object_let and s7_c_object_set_let manage the c-object's local environment. These two functions need to check that they are passed the correct number of arguments.
+.Pp
+.Sh TYPE CONFIGURATION
+.Pp
+The following functions configure c-types with callback functions that implement core functionality, e.g. length, to_string, etc.
 .Pp
 Old style free/mark/equal:
 .Bl -inset -offset indent
 .It
 .Fn s7_c_type_set_free
-The function called when an object of this type is about to be garbage collected
+Sets the function that is called by the GC when a Scheme c-object is garbage-collected. You normally use this to free the associated C value (the instance of the struct). To get that value, call
+.Fn s7_c_object_value .
+It returns the void* pointer that you originally passed to
+.Fn s7_make_c_object .
 .It
 .Fn s7_c_type_set_mark
-Called during the GC mark pass -- you should call
+Sets the function that is called by the GC during its marking phase. Any
+.Fn s7_pointer
+value local to your C struct should be marked explicitly at this time, or the GC will free it. Use
 .Fn s7_mark
-on any embedded
-.Em s7_pointer
-associated with the object (including its
-.Em let
-) to protect if from the GC.
+for this.
 .It
 .Fn s7_c_type_set_equal
-Compare two objects of this type;
-.Em (equal? obj1 obj2)
 .El
 .Pp
 New style free/mark/equal and equivalent:
@@ -142,18 +175,29 @@ New style free/mark/equal and equivalent:
 .Fn s7_c_type_set_gc_mark
 .It
 .Fn s7_c_type_set_is_equal
-Compare objects as in equal?
+Sets the function called when s7 sees a c-object of the current type as an argument to
+.Em equal? .
+When called, this function can assume that the first argument is a c-object of the current type, but the second argument can be anything.
 .It
 .Fn s7_c_type_set_is_equivalent
-Compare objects as in equivalent?
+Compare objects as in
+.Em equivalent?
+See
+.Fn s7_c_type_set_is_equal
+above.
 .El
 .Pp
 .Fn s7_c_type_set_ref "s7_scheme *sc, s7_int tag, s7_pointer (*ref)(s7_scheme *sc, s7_pointer args)"
-.Em ref
-is a function that is called whenever an object of this type occurs in the function position (at the car of a list; the rest of the list is passed to the ref function as the arguments: (obj ...))
+Sets the function called when the c-object is treated as an applicable object in Scheme; i.e. at the car of a list. The rest of the list is passed to the ref function as the arguments:
+.Em (obj ...)
+in Scheme calls the function set as the "ref" function.
 .Pp
 .Fn s7_c_type_set_set
-A function that is called whenever an object of this type occurs as the target of a generalized set! (set! (obj ...) val)
+Sets the function called when a c-object of this type occurs as the target of a generalized
+.Em set!
+application, e.g.
+.Em (set! (obj ...) val) .
+Scheme calls the "set" function, and the arguments in the set! form are passed as a flattened list.
 .Pp
 .Fn s7_c_type_set_length
 The function called when the object is asked what its length is.
@@ -177,7 +221,9 @@ object->string for an object of this type
 .Fn s7_c_type_set_setter
 .Pp
 .Fn s7_mark
-Marks any Scheme c_object as in-use (use this in the mark function to mark any embedded s7_pointer variables).
+Marks any Scheme c_object as in-use (use this in the mark function to mark any embedded
+.Em s7_pointer
+variables).
 .Pp
 The
 .Fn s7_c_type_set_getter
@@ -193,11 +239,9 @@ and
 needs to be GC protected by marking it in the c_object's mark function.
 .Sh RETURN VALUES
 Upon successful completion
-.Fn fopen ,
-.Fn fdopen ,
-.Fn freopen
+.Fn foo
 and
-.Fn fmemopen
+.Fn bar
 return a
 .Tn FILE
 pointer.
@@ -206,101 +250,24 @@ Otherwise,
 is returned and the global variable
 .Va errno
 is set to indicate the error.
+.Sh EXAMPLES
+
+ s7_define_function(s7, "notify-C", scheme_set_notification, 2, 0, false, "called if notified-var is set!");
+ s7_define_variable(s7, "notified-var", s7_make_integer(s7, 0));
+ s7_set_setter(s7, s7_make_symbol(s7, "notified-var"), s7_name_to_value(s7, "notify-C"));
+
 .Sh ERRORS
-.Bl -tag -width Er
-.It Bq Er EINVAL
-The
-.Fa mode
-argument
-to
-.Fn fopen ,
-.Fn fdopen ,
-.Fn freopen ,
-or
-.Fn fmemopen
-was invalid.
-.El
-.Pp
-The
-.Fn fopen ,
-.Fn fdopen ,
-.Fn freopen
-and
-.Fn fmemopen
-functions
-may also fail and set
-.Va errno
-for any of the errors specified for the routine
-.Xr malloc 3 .
-.Pp
-The
-.Fn fopen
-function
-may also fail and set
-.Va errno
-for any of the errors specified for the routine
-.Xr open 2 .
-.Pp
-The
-.Fn fdopen
-function
-may also fail and set
-.Va errno
-for any of the errors specified for the routine
-.Xr fcntl 2 .
-.Pp
-The
-.Fn freopen
-function
-may also fail and set
-.Va errno
-for any of the errors specified for the routines
-.Xr open 2 ,
-.Xr fclose 3
-and
-.Xr fflush 3 .
-.Pp
-The
-.Fn fmemopen
-function
-may also fail and set
-.Va errno
-if the
-.Fa size
-argument is 0.
 .Sh SEE ALSO
-.Xr open 2 ,
-.Xr fclose 3 ,
-.Xr fileno 3 ,
-.Xr fseek 3 ,
-.Xr funopen 3
-.Sh STANDARDS
-The
-.Fn fopen
-and
-.Fn freopen
-functions
-conform to
-.St -isoC ,
-with the exception of the
-.Dq Li x
-mode option which conforms to
-.St -isoC-2011 .
-The
-.Fn fdopen
-function
-conforms to
-.St -p1003.1-88 .
-The
-.Dq Li e
-mode option does not conform to any standard
-but is also supported by glibc.
-The
-.Fn fmemopen
-function
-conforms to
-.St -p1003.1-2008 .
-The
-.Dq Li b
-mode does not conform to any standard
-but is also supported by glibc.
+.Xr s7_c_pointers 3 ,
+.Xr SRFI 17 Generalize set! https://srfi.schemers.org/srfi-17/srfi-17.html
+.Xr Guile manual 6.7.8 Procedures with Setters https://www.gnu.org/software/guile/manual/html_node/Procedures-with-Setters.html
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support
