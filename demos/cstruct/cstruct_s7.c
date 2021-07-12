@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+
+#include "log.h"
 #include "s7.h"
 
 #include "cstruct.h"
@@ -31,7 +33,7 @@ static s7_pointer g_cstruct_methods;
 static s7_pointer g_is_cstruct(s7_scheme *sc, s7_pointer args)
 {
 #ifdef DEBUG_TRACE
-    printf("g_is_cstruct\n");
+    log_debug("g_is_cstruct");
 #endif
     return(s7_make_boolean(sc, s7_c_object_type(s7_car(args)) == cstruct_t));
 }
@@ -42,7 +44,7 @@ static s7_pointer g_is_cstruct(s7_scheme *sc, s7_pointer args)
 static bool g_cstructs_are_eql(void *val1, void *val2)
 {
 #ifdef DEBUG_TRACE
-    printf("g_cstructs_are_eql\n");
+    log_debug("g_cstructs_are_eql");
 #endif
     s7_int i, len;
     struct cstruct_s *b1 = (struct cstruct_s *)val1;
@@ -55,7 +57,7 @@ static bool g_cstructs_are_eql(void *val1, void *val2)
 static s7_pointer g_cstructs_are_equal(s7_scheme *sc, s7_pointer args)
 {
 #ifdef DEBUG_TRACE
-    printf("g_cstructs_are_equal\n");
+    log_debug("g_cstructs_are_equal");
 #endif
     return(s7_make_boolean(sc, g_cstructs_are_eql((void *)s7_c_object_value(s7_car(args)), (void *)s7_c_object_value(s7_cadr(args)))));
 }
@@ -63,7 +65,7 @@ static s7_pointer g_cstructs_are_equal(s7_scheme *sc, s7_pointer args)
 static s7_pointer g_cstructs_are_equivalent(s7_scheme *sc, s7_pointer args)
 {
 #ifdef DEBUG_TRACE
-    printf("g_cstructs_are_equivalent\n");
+    log_debug("g_cstructs_are_equivalent");
 #endif
 
 #define g_cstructs_are_equivalent_help "(equivalent? cstruct1 cstruct2)"
@@ -103,7 +105,7 @@ static s7_pointer g_cstructs_are_equivalent(s7_scheme *sc, s7_pointer args)
 static s7_pointer g_cstruct_ref(s7_scheme *sc, s7_pointer args)
 {
 #ifdef DEBUG_TRACE
-    printf("g_cstruct_ref\n");
+    log_debug("g_cstruct_ref");
 #endif
 #define g_cstruct_ref_help "(cstruct-ref b i) returns the cstruct value at index i."
 #define g_cstruct_ref_sig s7_make_signature(sc, 3, s7_t(sc), s7_make_symbol(sc, "cstruct?"), s7_make_symbol(sc, "integer?"))
@@ -142,7 +144,7 @@ static s7_pointer g_cstruct_ref(s7_scheme *sc, s7_pointer args)
 static s7_pointer g_cstruct_set(s7_scheme *sc, s7_pointer args)
 {
 #ifdef DEBUG_TRACE
-    printf("g_cstruct_set\n");
+    log_debug("g_cstruct_set");
 #endif
 #define g_cstruct_set_help "(cstruct-set! b i x) sets the cstruct value at index i to x."
 #define g_cstruct_set_sig s7_make_signature(sc, 4, s7_make_symbol(sc, "float?"), s7_make_symbol(sc, "cstruct?"), s7_make_symbol(sc, "integer?"), s7_make_symbol(sc, "float?"))
@@ -178,7 +180,7 @@ static s7_pointer g_cstruct_set(s7_scheme *sc, s7_pointer args)
 static char *g_cstruct_display(s7_scheme *sc, void *value)
 {
 #ifdef DEBUG_TRACE
-    printf("g_cstruct_display\n");
+    log_debug("g_cstruct_display");
 #endif
 
     struct cstruct_s *b = (struct cstruct_s *)value;
@@ -215,7 +217,7 @@ static char *g_cstruct_display(s7_scheme *sc, void *value)
 static char *g_cstruct_display_readably(s7_scheme *sc, void *value)
 {
 #ifdef DEBUG_TRACE
-    printf("g_cstruct_display_readably\n");
+    log_debug("g_cstruct_display_readably");
 #endif
 
     char *buf, *flt;
@@ -249,7 +251,7 @@ static char *g_cstruct_display_readably(s7_scheme *sc, void *value)
 static s7_pointer g_cstruct_to_string(s7_scheme *sc, s7_pointer args)
 {
 #ifdef DEBUG_TRACE
-    printf("g_cstruct_to_string\n");
+    log_debug("g_cstruct_to_string");
 #endif
 
     s7_pointer obj, choice;
@@ -273,7 +275,7 @@ static s7_pointer g_cstruct_to_string(s7_scheme *sc, s7_pointer args)
 static s7_pointer g_cstruct_copy(s7_scheme *sc, s7_pointer args)
 {
 #ifdef DEBUG_TRACE
-    printf("g_cstruct_copy\n");
+    log_debug("g_cstruct_copy");
 #endif
 
     s7_pointer new_g, obj;
@@ -294,7 +296,7 @@ static s7_pointer g_cstruct_copy(s7_scheme *sc, s7_pointer args)
 static s7_pointer g_cstruct_init_from_s7(s7_scheme *s7, struct cstruct_s *cs, s7_pointer args)
 {
 #ifdef DEBUG_TRACE
-    printf("g_cstruct_init_from_s7\n");
+    log_debug("g_cstruct_init_from_s7");
 #endif
     s7_pointer arg1;
     arg1 = s7_car(args);
@@ -312,15 +314,15 @@ static s7_pointer g_cstruct_init_from_s7(s7_scheme *s7, struct cstruct_s *cs, s7
 static s7_pointer g_new_cstruct(s7_scheme *s7, s7_pointer args)
 {
 #ifdef DEBUG_TRACE
-    printf("g_new_cstruct\n");
+    log_debug("g_new_cstruct");
 #endif
 
     struct cstruct_s *new_cstruct = (struct cstruct_s *)
         calloc(1, sizeof(struct cstruct_s));
     if (g_cstruct_init_from_s7(s7, new_cstruct, args) != NULL) {
-        printf("OOPS\n");
+        log_debug("OOPS");
     }
-    printf("new cs->s: %s\n", new_cstruct->s);
+    log_debug("new cs->s: %s", new_cstruct->s);
 
     s7_pointer new_cstruct_s7 = s7_make_c_object(s7, cstruct_t,
                                                  (void *)new_cstruct);
@@ -337,7 +339,7 @@ static s7_pointer g_new_cstruct(s7_scheme *s7, s7_pointer args)
 static s7_pointer g_destroy_cstruct(s7_pointer obj)
 {
 #ifdef DEBUG_TRACE
-    printf("g_destroy_cstruct\n");
+    log_debug("g_destroy_cstruct");
 #endif
     struct cstruct_s *cs = (struct cstruct_s*)s7_c_object_value(obj);
     cstruct_free(cs);
@@ -349,7 +351,7 @@ static s7_pointer g_destroy_cstruct(s7_pointer obj)
 /* static s7_pointer g_cstruct_gc_free(s7_scheme *sc, s7_pointer obj) */
 /* { */
 /* #ifdef DEBUG_TRACE */
-/*     printf("g_cstruct_gc_free\n"); */
+/*     log_debug("g_cstruct_gc_free"); */
 /* #endif */
 /*     struct cstruct_s *cs = (struct cstruct_s*)s7_c_object_value(obj); */
 /*     cstruct_free(cs); */
@@ -369,7 +371,7 @@ static s7_pointer g_cstruct_gc_mark(s7_scheme *sc, s7_pointer p)
 int _register_cstruct_fns(s7_scheme *sc)
 {
 #ifdef DEBUG_TRACE
-    printf("_register_cstruct_fns\n");
+    log_debug("_register_cstruct_fns");
 #endif
     s7_define_safe_function(sc, "make-cstruct", g_new_cstruct, 1, 0, false, g_new_cstruct_help);
     /* s7_define_safe_function(sc, "cstruct", g_to_cstruct, 0, 0, true, g_cstruct_help); */
@@ -414,7 +416,7 @@ int _register_cstruct_fns(s7_scheme *sc)
 int _make_c_type(s7_scheme *sc)
 {
 #ifdef DEBUG_TRACE
-    printf("_make_c_type\n");
+    log_debug("_make_c_type");
 #endif
     cstruct_t = s7_make_c_type(sc, "<cstruct>");
     s7_c_type_set_gc_free(sc, cstruct_t, g_destroy_cstruct);
@@ -435,7 +437,7 @@ int _make_c_type(s7_scheme *sc)
 s7_int configure_s7_cstruct_type(s7_scheme *s7)
 {
 #ifdef DEBUG_TRACE
-    printf("configure_s7_cstruct_type\n");
+    log_debug("configure_s7_cstruct_type");
 #endif
     s7_int t = _make_c_type(s7);
     int rc   = _register_cstruct_fns(s7);

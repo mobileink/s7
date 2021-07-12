@@ -14,6 +14,7 @@
 #include<stdlib.h>
 #include <unistd.h>
 
+#include "log.h"
 #include "s7.h"
 
 /* #include "bazel.h" */
@@ -55,7 +56,7 @@ int cstruct_init(struct cstruct_s *cs,
 
 void cstruct_free(struct cstruct_s *cs)
 {
-    printf("cstruct_free\n");
+    log_debug("cstruct_free");
     free(cs->s);
     free(cs->pi);
     free(cs);
@@ -63,7 +64,7 @@ void cstruct_free(struct cstruct_s *cs)
 
 int run_cstruct(s7_scheme *s7)
 {
-    printf("run_cstruct\n");
+    log_debug("run_cstruct");
     /* struct cstruct_s *cs_dyn = calloc(sizeof(struct cstruct_s), 1); */
 
     int rc = configure_s7_cstruct_type(s7);
@@ -72,7 +73,7 @@ int run_cstruct(s7_scheme *s7)
     s7_pointer lf;
     lf =  s7_load(s7, load_script);
 
-    printf("calling cstruct handler\n");
+    log_debug("calling cstruct handler");
     s7_pointer args =  s7_list(s7,
                                3, //num_values,
                                s7_make_integer(s7, 1),

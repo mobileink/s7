@@ -14,6 +14,7 @@
 #include<stdlib.h>
 #include <unistd.h>
 
+#include "log.h"
 #include "s7.h"
 
 /* #include "bazel.h" */
@@ -36,11 +37,11 @@ int main(int argc, char *argv[]) // , char **envp)
 
     /* debugging: */
     /* s7_pointer loadpath = s7_load_path(s7); */
-    /* printf("load path: %s\n", s7_object_to_c_string(s7, loadpath)); */
+    /* log_debug("load path: %s", s7_object_to_c_string(s7, loadpath)); */
 
     int rc;
     rc = run_cstruct(s7);
-    printf("return code: %d\n", rc);
+    log_debug("return code: %d", rc);
     s7_quit(s7);
     return rc;
 }

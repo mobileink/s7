@@ -13,12 +13,13 @@ cc_binary(
         "-pedantic-errors",
         # "-I.",
         "-Idemos/cstruct",
-        # "-Itest/g_block",
+        "-Idemos/logc",
         "-Is7"
     ],
     deps = [
         "//demos:bazel",
         "//demos/cstruct",
+        "//demos/logc",
         "//s7",
     ],
 )
@@ -33,10 +34,12 @@ cc_library(
         "-std=c11",
         "-I.",
         # "-Idemos/cstruct",
+        "-Idemos/logc",
         "-Is7"
    ],
     deps = [
         "//demos/cstruct:cstruct_s7",
+        "//demos/logc"
     ],
 )
 
@@ -50,10 +53,12 @@ cc_library(
     # data = ["cstruct.scm"],
     copts = [
         "-std=c11",
+        "-Idemos/logc",
         "-Is7"
     ],
     defines = ["DEBUG_TRACE"],
     deps = [
+        "//demos/logc",
         "//s7"
     ],
 )
