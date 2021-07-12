@@ -1,0 +1,80 @@
+.Dd July 12, 2021
+.Dt S7 3
+.Sh NAME
+.Nm S7
+.Nd Lists
+.Sh LIBRARY
+libs7, -ls7
+.Sh SYNOPSIS
+.In s7.h
+.Ft bool
+.Fn  s7_is_list "s7_scheme *sc, s7_pointer p"                                (list? p) -> (or (pair? p) (null? p))
+.Ft bool
+.Fn  s7_is_proper_list "s7_scheme *sc, s7_pointer p"
+(proper-list? p)
+.Ft s7_int
+.Fn s7_list_length "s7_scheme *sc, s7_pointer a"
+(length a)
+.Ft s7_pointer
+.Fn s7_make_list "s7_scheme *sc, s7_int len, s7_pointer init"
+(make-list len init)
+.Ft s7_pointer
+.Fn s7_list "s7_scheme *sc, s7_int num_values, ..."
+(list ...)
+.Ft s7_pointer
+.Fn s7_list_nl "s7_scheme *sc, s7_int num_values, ..."
+(list ...) arglist should be NULL terminated (more error checks than
+.Em s7_list )
+.Ft s7_pointer
+.Fn s7_reverse "s7_scheme *sc, s7_pointer a"
+(reverse a)
+.Ft s7_pointer
+.Fn s7_append "s7_scheme *sc, s7_pointer a, s7_pointer b"
+(append a b)
+.Ft s7_pointer
+.Fn s7_list_ref "s7_scheme *sc, s7_pointer lst, s7_int num"
+(list-ref lst num)
+.Ft s7_pointer
+.Fn s7_list_set "s7_scheme *sc, s7_pointer lst, s7_int num, s7_pointer val"
+(list-set! lst num val)
+.Ft s7_pointer
+.Fn s7_assoc "s7_scheme *sc, s7_pointer obj, s7_pointer lst"
+(assoc obj lst)
+.Ft s7_pointer
+.Fn s7_assq "s7_scheme *sc, s7_pointer obj, s7_pointer x"
+(assq obj lst)
+.Ft s7_pointer
+.Fn s7_member "s7_scheme *sc, s7_pointer obj, s7_pointer lst"
+(member obj lst)
+.Ft s7_pointer
+.Fn s7_memq "s7_scheme *sc, s7_pointer obj, s7_pointer x"
+(memq obj lst)
+.Ft bool
+.Fn  s7_tree_memq "s7_scheme *sc, s7_pointer sym, s7_pointer tree"
+(tree-memq sym tree)
+.Sh DESCRIPTION
+.Sh EXAMPLES
+.Bd -literal -offset indent
+verbatim code here...
+.Ed
+.Pp
+.Sh SEE ALSO
+.Xr s7_datatypes 3 ,
+.Xr s7_equality 3
+.Pp
+.Xr s7_booleans 3 ,
+.Xr s7_characters 3 ,
+.Xr s7_numbers 3 ,
+.Xr s7_pairs 3 ,
+.Xr s7_strings 3 ,
+.Xr s7_vectors 3 ,
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support

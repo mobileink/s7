@@ -1,0 +1,52 @@
+.Dd July 12, 2021
+.Dt S7 3
+.Sh NAME
+.Nm S7
+.Nd Nulls
+.Sh LIBRARY
+libs7, -ls7
+.Sh SYNOPSIS
+.In s7.h
+.Ft s7_pointer
+.Fn s7_nil "s7_scheme *sc"
+()
+.Ft s7_pointer
+.Fn s7_undefined "s7_scheme *sc"
+#<undefined>
+.Ft s7_pointer
+.Fn s7_unspecified "s7_scheme *sc"
+#<unspecified>
+bool s7_is_unspecified "s7_scheme *sc, s7_pointer val"
+returns true if val is #<unspecified>
+.Ft s7_pointer
+.Fn s7_eof_object "s7_scheme *sc"
+#<eof>
+.Ft bool
+.Fn s7_is_null "s7_scheme *sc, s7_pointer arg"
+(null? arg)
+.Sh DESCRIPTION
+These are the Scheme constants; they do not change in value during a run, so they can be safely assigned to C global variables if desired.
+.Sh EXAMPLES
+.Bd -literal -offset indent
+.Ed
+.Pp
+.Sh SEE ALSO
+.Xr s7_datatypes 3 ,
+.Xr s7_equality 3
+.Pp
+.Xr s7_characters 3 ,
+.Xr s7_lists 3 ,
+.Xr s7_numbers 3 ,
+.Xr s7_pairs 3 ,
+.Xr s7_strings 3 ,
+.Xr s7_vectors 3 ,
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support

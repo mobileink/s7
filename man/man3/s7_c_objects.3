@@ -79,9 +79,20 @@ call type configuration functions (e.g.
 .Fn s7_c_type_set_is_equal ,
 etc.) to specialize the behavior of objects of the c-type
 .It
+optionally, define (Scheme) functions (using
+.Fn s7_define_safe_function ,
+.Sm off
+.Fn s7_define_typed_function
+)
+.Sm on
+that do something with objects of the c-type, such as
+.Em is-foo?
+.Em make-foo ,
+and any others that make sense.
+.It
 call
 .Fn s7_make_c_object
-to wrap a C struct as man object of the c-type.
+to wrap a C struct as an object of the c-type.
 .El
 .Pp
 .Fn s7_make_c_type "s7_scheme *sc, const char *name"

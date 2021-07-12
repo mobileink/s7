@@ -9,6 +9,7 @@ libs7, -ls7
 .In s7.h
 .Ft bool
 .Fn s7_is_c_pointer "s7_pointer arg"
+(c-pointer? arg)
 .Ft bool
 .Fn s7_is_c_pointer_of_type "s7_pointer arg, s7_pointer type"
 .Ft void
@@ -22,6 +23,8 @@ libs7, -ls7
 .Ft s7_pointer
 .Fn s7_make_c_pointer_with_type "s7_scheme *sc, void *ptr, s7_pointer type, s7_pointer info"
 .Sh DESCRIPTION
+These are for passing uninterpreted C pointers through Scheme.
+.Pp
 An
 .Em s7_pointer
 is a Scheme object of any (Scheme) type; such "pointers" are used throughout the API.  A "c-pointer" is not a genuine pointer, but an encapsulation of a C pointer: an

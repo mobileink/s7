@@ -1,0 +1,41 @@
+.Dd July 12, 2021
+.Dt S7 3
+.Sh NAME
+.Nm S7
+.Nd Symbols
+.Sh LIBRARY
+libs7, -ls7
+.Sh SYNOPSIS
+.In s7.h
+.Ft bool
+.Fn s7_is_syntax "s7_pointer p"
+(syntax? p)
+.Ft bool
+.Fn s7_is_symbol "s7_pointer p"
+(symbol? p)
+.Ft const char*
+.Fn s7_symbol_name "s7_pointer p"
+(symbol->string p) ;; don't free the string
+.Ft s7_pointer
+.Fn s7_make_symbol "s7_scheme *sc, const char *name"
+(string->symbol name)
+.Ft s7_pointer
+.Fn s7_gensym "s7_scheme *sc, const char *prefix"
+(gensym prefix)
+.Sh DESCRIPTION
+.Sh EXAMPLES
+.Bd -literal -offset indent
+.Ed
+.Pp
+.Sh SEE ALSO
+.Xr s7_datatypes 3
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support

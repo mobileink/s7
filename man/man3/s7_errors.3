@@ -1,0 +1,70 @@
+.Dd July 10, 2021
+.Dt S7 3
+.Sh NAME
+.Nm S7
+.Nd Errors
+.Sh LIBRARY
+libs7, -ls7
+.Sh SYNOPSIS
+.In s7.h
+.Bd -literal -offset indent
+.Ft s7_pointer
+.Fn s7_error "s7_scheme *sc, s7_pointer type, s7_pointer info"
+.Ft s7_pointer
+.Fn s7_wrong_type_arg_error "s7_scheme *sc, const char *caller, s7_int arg_n, s7_pointer arg, const char *descr"
+set arg_n to 0 to indicate that caller takes only one argument (so the argument number need not be reported)
+.Ft s7_pointer
+.Fn s7_out_of_range_error "s7_scheme *sc, const char *caller, s7_int arg_n, s7_pointer arg, const char *descr"
+.Ft s7_pointer
+.Fn s7_wrong_number_of_args_error "s7_scheme *sc, const char *caller, s7_pointer args"
+.Ed
+.Sh DESCRIPTION
+These are equivalent to
+.Em (error ...)
+in Scheme.  The first argument to
+.Fn s7_error
+is a symbol that can be caught (via
+Em (catch tag ...)
+). The rest of the arguments are passed to the error handler (if in catch) or printed out (in the default case).  If the first element of the list of args ("info") is a string, the default error handler treats it as a format control string, and passes it to format with the rest of the info list as the format function arguments.
+.Pp
+.Fn s7_wrong_type_arg_error
+is equivalent to
+.Fn s7_error
+with a type of
+.Em 'wrong-type-arg
+and similarly
+.Fn s7_out_of_range_error
+with type
+.Em 'out-of-range .
+.Pp
+.Em catch
+in Scheme is taken from Guile:
+.Bd -literal -offset indent
+ (catch tag thunk handler)
+.Ed
+.Pp
+evaluates
+.Em thunk .
+If an error occurs, and the type matches
+.Em tag
+(or if
+.Em tag
+is #t), the handler is called, passing it the arguments (including the type) passed to the error function.  If no handler is found, the default error handler is called, normally printing the error arguments to
+.Em current-error-port .
+.Sh EXAMPLES
+.Bd -literal -offset indent
+verbatim code here...
+.Ed
+.Pp
+.Sh SEE ALSO
+.Xr s7_c_objects 3 ,
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support

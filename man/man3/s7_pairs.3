@@ -1,0 +1,111 @@
+.Dd July 12, 2021
+.Dt S7 3
+.Sh NAME
+.Nm S7
+.Nd Pairs
+.Sh LIBRARY
+libs7, -ls7
+.Sh SYNOPSIS
+.In s7.h
+.Ft bool
+.Fn s7_is_pair "s7_pointer p"
+(pair? p)
+.Ft s7_pointer
+.Fn s7_cons "s7_scheme *sc, s7_pointer a, s7_pointer b"
+(cons a b)
+.Ft s7_pointer
+.Fn s7_car "s7_pointer p"
+(car p)
+.Ft s7_pointer
+.Fn s7_cdr "s7_pointer p"
+(cdr p)
+.Ft s7_pointer
+.Fn s7_set_car "s7_pointer p, s7_pointer q"
+(set-car! p q)
+.Ft s7_pointer
+.Fn s7_set_cdr "s7_pointer p, s7_pointer q"
+(set-cdr! p q)
+.Ft s7_pointer
+.Fn s7_cadr "s7_pointer p"
+(cadr p)
+.Ft s7_pointer
+.Fn s7_cddr "s7_pointer p"
+(cddr p)
+.Ft s7_pointer
+.Fn s7_cdar "s7_pointer p"
+(cdar p)
+.Ft s7_pointer
+.Fn s7_caar "s7_pointer p"
+(caar p)
+.Ft s7_pointer
+.Fn s7_caadr "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_caddr "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_cadar "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_caaar "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_cdadr "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_cdddr "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_cddar "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_cdaar "s7_pointer p"
+
+.Ft s7_pointer
+.Fn s7_caaadr "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_caaddr "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_caadar "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_caaaar "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_cadadr "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_cadddr "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_caddar "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_cadaar "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_cdaadr "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_cdaddr "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_cdadar "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_cdaaar "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_cddadr "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_cddddr "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_cdddar "s7_pointer p"
+.Ft s7_pointer
+.Fn s7_cddaar "s7_pointer p"
+.Sh DESCRIPTION
+.Pp
+
+.Sh SEE ALSO
+.Xr s7_datatypes 3 ,
+.Xr s7_equality 3
+.Pp
+.Xr s7_booleans 3 ,
+.Xr s7_characters 3 ,
+.Xr s7_lists 3 ,
+.Xr s7_numbers 3 ,
+.Xr s7_strings 3 ,
+.Xr s7_vectors 3 ,
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support

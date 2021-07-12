@@ -1,0 +1,65 @@
+.Dd July 12, 2021
+.Dt S7 3
+.Sh NAME
+.Nm S7
+.Nd Memory Management and Garbage Collection
+.Sh LIBRARY
+libs7, -ls7
+.Sh SYNOPSIS
+.In s7.h
+.Ft s7_scheme*
+.Fn s7_init "void"
+initializes s7 interpreter
+.Ft void
+.Fn s7_free "s7_scheme *sc"
+frees the s7 interpreter
+.Ft s7_pointer
+.Fn s7_gc_on(s7_scheme *sc, bool on);
+/* (gc on) */
+.Ft s7_int
+.Fn s7_gc_protect(s7_scheme *sc, s7_pointer x);
+.Ft void
+.Fn s7_gc_unprotect_at(s7_scheme *sc, s7_int loc);
+.Ft s7_pointer
+.Fn s7_gc_protected_at(s7_scheme *sc, s7_int loc);
+.Ft s7_pointer
+.Fn s7_gc_protect_via_stack(s7_scheme *sc, s7_pointer x);
+.Ft s7_pointer
+.Fn s7_gc_unprotect_via_stack(s7_scheme *sc, s7_pointer x);
+.Ft s7_pointer
+.Fn s7_gc_protect_via_location(s7_scheme *sc, s7_pointer x, s7_int loc);
+.Ft s7_pointer
+.Fn s7_gc_unprotect_via_location(s7_scheme *sc, s7_int loc);
+.Sh DESCRIPTION
+Any s7_pointer object held in C (as a local variable for example) needs to be protected from garbage collection if there is any chance the GC may run without an existing Scheme-level reference to that object.  s7_gc_protect places the object in a vector that the GC always checks, returning the object's location in that table.  s7_gc_unprotect_at unprotects the object (removes it from the vector) using the location passed to it.  s7_gc_protected_at returns the object at the given location.
+.Pp
+You can turn the GC on and off via
+.Fn s7_gc_on .
+.Pp
+There is a built-in lag between the creation of a new object and its first possible GC (the lag time is set indirectly by GC_TEMPS_SIZE in s7.c), so you don't need to worry about very short term temps such as the arguments to s7_cons in:
+.Pp
+.Bd -literal -offset indent
+   s7_cons(s7, s7_make_real(s7, 3.14),
+               s7_cons(s7, s7_make_integer(s7, 123), s7_nil(s7)));
+.Ed
+.Sh EXAMPLES
+.Bd -literal -offset indent
+verbatim code here...
+.Ed
+.Pp
+.Sh SEE ALSO
+.Xr s7_characters 3 ,
+.Xr s7_lists 3 ,
+.Xr s7_numbers 3 ,
+.Xr s7_strings 3 ,
+.Xr s7_vectors 3 ,
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support
