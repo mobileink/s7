@@ -3,17 +3,22 @@
 ###########
 cc_library(
     name  = "s7",
-    linkstatic = 0,
+    # linkstatic = 0,
     srcs  = ["s7.c", "mus-config.h"],
     hdrs  = ["s7.h"],
     copts = select({
-        # "//:macos": ["-std=c11"],
+        # "//:macos": [
+        #     "-std=c11"
+        #     # -fsanitize=address
+        #     # -lasan
+        #     # -fsanitize=bounds
+        # ],
         # "//:linux": ["-std=gnu11"],
         "//conditions:default": ["-std=c11"],
     }) + [
         # "-pedantic-errors",
         # "-Wextra",
-        "-I$(GENDIR)/src"
+        "-I$(GENDIR)/s7"
     ],
     linkopts = select({
         # "//:macos": ["-std=c11"],
@@ -45,7 +50,7 @@ cc_binary(
         # "-pedantic-errors",
         # "-Wextra",
         "-O2", "-g",
-        "-I$(GENDIR)/src"
+        "-I$(GENDIR)/s7"
     ],
     defines = ["WITH_MAIN"],
     deps = [":s7"],
