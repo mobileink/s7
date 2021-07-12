@@ -1,0 +1,59 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+cc_binary(
+    name  = "driver",
+    linkstatic = 1,
+    srcs  = [
+        "driver.c",
+        "cstruct.h",
+    ],
+    data = glob(["*.scm"]),
+    copts = [
+        "-std=c11",
+        "-pedantic-errors",
+        # "-I.",
+        "-Idemos/cstruct",
+        # "-Itest/g_block",
+        "-Is7"
+    ],
+    deps = [
+        "//demos:bazel",
+        "//demos/cstruct",
+        "//s7",
+    ],
+)
+
+cc_library(
+    name  = "cstruct",
+    linkstatic = 1,
+    srcs  = ["cstruct.c", "cstruct_s7.h"],
+    hdrs = ["cstruct.h"],
+    data = ["cstruct.scm"],
+    copts = [
+        "-std=c11",
+        "-I.",
+        # "-Idemos/cstruct",
+        "-Is7"
+   ],
+    deps = [
+        "//demos/cstruct:cstruct_s7",
+    ],
+)
+
+cc_library(
+    name  = "cstruct_s7",
+    linkstatic = 1,
+    srcs  = [
+        "cstruct_s7.c",
+        "cstruct.h"
+    ],
+    # data = ["cstruct.scm"],
+    copts = [
+        "-std=c11",
+        "-Is7"
+    ],
+    defines = ["DEBUG_TRACE"],
+    deps = [
+        "//s7"
+    ],
+)

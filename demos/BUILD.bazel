@@ -1,0 +1,62 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+cc_binary(
+    name  = "driver",
+    linkstatic = 1,
+    srcs  = [
+        "driver.c",
+        # "cstruct.c",
+        # "cstruct.h",
+        "load.c",
+        "load.h",
+        # "bazel.c",
+        # "bazel.h"
+    ],
+    data = glob(["*.scm"]),
+    copts = [
+        "-std=c11",
+        "-pedantic-errors",
+        "-I.",
+        "-Idemos",
+        "-Is7"
+    ],
+    deps = [
+        ":bazel",
+        "//s7"
+    ],
+)
+
+cc_binary(
+    name  = "load",
+    linkstatic = 1,
+    srcs  = [
+        "load.c",
+        "bazel.c",
+        "bazel.h"
+    ],
+    data = ["load.scm"],
+    copts = [
+        "-std=c11",
+        "-pedantic-errors",
+        "-I.",
+        "-Idemos",
+        "-Is7"
+    ],
+    deps = [
+        "//s7"
+    ],
+)
+
+cc_library(
+    name  = "bazel",
+    visibility = ["//visibility:public"],
+    linkstatic = 1,
+    srcs  = ["bazel.c"],
+    hdrs = ["bazel.h"],
+    copts = [
+        "-std=c11",
+        "-pedantic-errors",
+        "-I.",
+        "-Idemos",
+    ]
+)
