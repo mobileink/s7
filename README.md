@@ -6,5 +6,5 @@ s7 is a Scheme interpreter.
 
 This is branch 'main'; the original repo is on branch 'master'.
 
-The original README and source code is on this branch in [src](src).
+The original README and source code is on this branch in [s7/](s7).
 
