@@ -1,0 +1,40 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+cc_binary(
+    name  = "g_block",
+    linkstatic = 1,
+    srcs  = [
+        "g_block.c",
+        "libg_block.h",
+    ],
+    data = glob(["*.scm"]),
+    copts = [
+        "-std=c11",
+        "-pedantic-errors",
+        "-I.",
+        "-Idemos",
+        "-Itest/g_block",
+        "-Is7"
+    ],
+    deps = [
+        "//demos:bazel",
+        "//test/g_block:libg_block",
+        "//s7",
+    ],
+)
+
+cc_library(
+    name  = "libg_block",
+    linkstatic = 1,
+    srcs  = [
+        "libg_block.c",
+    ],
+    data = ["g_block.scm"],
+    copts = [
+        "-std=c11",
+        "-Is7"
+    ],
+    deps = [
+        "//s7"
+    ],
+)
