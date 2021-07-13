@@ -11,20 +11,44 @@
 static s7_int cstruct_t = 0;
 static s7_pointer g_cstruct_methods;
 
-/*
-  sections: (search for 'section:')
+/* forward decls */
+/* section: identity */
+static s7_pointer g_is_cstruct(s7_scheme *sc, s7_pointer args);
 
-  * identity
-  * equality
-  * getters and setters
-  * display
-  * serialization
-  * c-object construction
-  * c-object destruction
-  * gc
-  * c-type configuration
-  * misc
- */
+/* section: equality */
+static bool       g_cstructs_are_eql(void *val1, void *val2);
+static s7_pointer g_cstructs_are_equal(s7_scheme *sc, s7_pointer args);
+static s7_pointer g_cstructs_are_equivalent(s7_scheme *sc, s7_pointer args);
+
+/* section: getters and setters */
+static s7_pointer g_cstruct_ref(s7_scheme *sc, s7_pointer args);
+static s7_pointer g_cstruct_set(s7_scheme *sc, s7_pointer args);
+
+/* section: display */
+static char *g_cstruct_display(s7_scheme *sc, void *value);
+static char *g_cstruct_display_readably(s7_scheme *sc, void *value);
+
+/* section: serialization */
+static s7_pointer g_cstruct_to_string(s7_scheme *sc, s7_pointer args);
+
+/* section: c-object construction */
+static s7_pointer g_cstruct_copy(s7_scheme *sc, s7_pointer args);
+static s7_pointer g_cstruct_init_from_s7(s7_scheme *s7, struct cstruct_s *cs, s7_pointer args);
+static s7_pointer g_new_cstruct(s7_scheme *s7, s7_pointer args);
+
+/* section: c-object destruction */
+static s7_pointer g_destroy_cstruct(s7_pointer obj);
+
+/* section: gc */
+static s7_pointer g_cstruct_gc_mark(s7_scheme *sc, s7_pointer p);
+
+/* section: c-type configuration */
+static int _register_cstruct_fns(s7_scheme *sc);
+static int _make_c_type(s7_scheme *sc);
+s7_int     configure_s7_cstruct_type(s7_scheme *s7); /* public */
+
+/* section: misc */
+
 
 void debug_print_s7(s7_scheme *s7, char *label, s7_pointer obj)
 {
@@ -383,6 +407,8 @@ static s7_pointer g_cstruct_init_from_s7(s7_scheme *s7, struct cstruct_s *cs, s7
     return NULL;
 }
 
+/** g_new_cstruct
+ */
 /* docstring passed to the s7_define_.. used to register the fn in Scheme */
 #define g_new_cstruct_help "(make-cstruct) returns a new cstruct with randome data"
 #define MAKE_CSTRUCT_FORMAL_PARAMS "(c \#\\a) (s \"hello\") (i 1) (pi 2) (l 3) (pl 4) (f 5.0) (pf 6.0) (d 7) (pd 8)"
@@ -442,7 +468,7 @@ static s7_pointer g_cstruct_gc_mark(s7_scheme *sc, s7_pointer p)
 /* **************************************************************** */
 /* section: c-type configuration */
 
-int _register_cstruct_fns(s7_scheme *sc)
+static int _register_cstruct_fns(s7_scheme *sc)
 {
 #ifdef DEBUG_TRACE
     log_debug("_register_cstruct_fns");
@@ -491,7 +517,7 @@ int _register_cstruct_fns(s7_scheme *sc)
     s7_gc_protect(sc, g_cstruct_methods);
 }
 
-int _make_c_type(s7_scheme *sc)
+static int _make_c_type(s7_scheme *sc)
 {
 #ifdef DEBUG_TRACE
     log_debug("_make_c_type");
