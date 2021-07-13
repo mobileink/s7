@@ -1,0 +1,33 @@
+.Dd July 10, 2021
+.Dt S7 3
+.Sh NAME
+.Nm S7
+.Nd Define and Lambda interface
+.Sh LIBRARY
+libs7, -ls7
+.Sh SYNOPSIS
+.In s7.h
+.Ft s7_pointer
+.Fn s7_define_macro "s7_scheme *sc, const char *name, s7_function fnc, s7_int required_args, s7_int optional_args, bool rest_arg, const char *doc"
+.Sh DESCRIPTION
+.Fn s7_define_macro
+defines a Scheme macro; its arguments are not evaluated (unlike those of a function), but its returned value (assumed to be some sort of Scheme expression) is evaluated. [GAR: presumably "its" refers to the macro, not s7_define_macro, meaning "the macro defined does not evaluate its arguments, ..."]
+.Sh EXAMPLES
+.Bd -literal -offset indent
+verbatim code here...
+.Ed
+.Pp
+.Sh SEE ALSO
+.Xr s7_c_objects 3 ,
+.Xr SRFI 89 Optional positional and named parameters https://srfi.schemers.org/srfi-89/srfi-89.html
+.Xr Guile manual 6.7.4.1 lambda* and define*
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support

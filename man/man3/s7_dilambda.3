@@ -1,0 +1,68 @@
+.Dd July 10, 2021
+.Dt S7 3
+.Sh NAME
+.Nm S7
+.Nd Define and Lambda interface
+.Sh LIBRARY
+libs7, -ls7
+.Sh SYNOPSIS
+.In s7.h
+.Ft bool
+.Fn s7_is_dilambda "s7_pointer obj"
+.Ft s7_pointer
+.Fo s7_dilambda
+.Fa "s7_scheme *sc"
+.Fa "const char *name"
+.Fa "s7_pointer (*getter)(s7_scheme *sc, s7_pointer args)"
+.Fa "s7_int get_req_args, s7_int get_opt_args"
+.Fa "s7_pointer (*setter)(s7_scheme *sc, s7_pointer args)"
+.Fa "s7_int set_req_args, s7_int set_opt_args"
+.Fa "const char *documentation"
+.Fc
+.Ft s7_pointer
+.Fo s7_typed_dilambda
+.Fa "s7_scheme *sc"
+.Fa "const char *name"
+.Fa "s7_pointer (*getter)(s7_scheme *sc, s7_pointer args)"
+.Fa "s7_int get_req_args, s7_int get_opt_args"
+.Fa "s7_pointer (*setter)(s7_scheme *sc, s7_pointer args)"
+.Fa "s7_int set_req_args, s7_int set_opt_args"
+.Fa "const char *documentation"
+.Fa "s7_pointer get_sig, s7_pointer set_sig"
+.Fc
+.Ft s7_pointer
+.Fo s7_dilambda_with_environment
+.Fa "s7_scheme *sc, s7_pointer env"
+.Fa "const char *name"
+.Fa "s7_pointer (*getter)(s7_scheme *sc, s7_pointer args)"
+.Fa "s7_int get_req_args, s7_int get_opt_args"
+.Fa "s7_pointer (*setter)(s7_scheme *sc, s7_pointer args)"
+.Fa "s7_int set_req_args, s7_int set_opt_args"
+.Fa "const char *documentation"
+.Fc
+.Sh DESCRIPTION
+The dilambda function [sic] define Scheme dilambda, just as the Scheme dilambda function does. The dax example above gives read/write access to its x field via:
+.Bd -literal -offset indent
+s7_define_variable(s7, "dax-x", s7_dilambda(s7, "dax-x", dax_x, 1, 0, set_dax_x, 2, 0, "dax x field"));
+.Ed
+.Pp
+[GAR: the term 'dilambda' is particular to s7?]
+.Sh EXAMPLES
+.Bd -literal -offset indent
+verbatim code here...
+.Ed
+.Pp
+.Sh SEE ALSO
+.Xr s7_c_objects 3 ,
+.Xr SRFI 89 Optional positional and named parameters https://srfi.schemers.org/srfi-89/srfi-89.html
+.Xr Guile manual 6.7.4.1 lambda* and define*
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support
