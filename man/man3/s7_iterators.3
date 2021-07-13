@@ -2,24 +2,18 @@
 .Dt S7 3
 .Sh NAME
 .Nm S7
-.Nd Evaluation interface
+.Nd Iterators
 .Sh LIBRARY
 libs7, -ls7
 .Sh SYNOPSIS
 .In s7.h
-.Ft s7_pointer
-.Fn s7_eval_c_string "s7_scheme *sc, const char *str"
-(eval-string str)
-.Ft s7_pointer
-.Fn s7_eval_c_string_with_environment "s7_scheme *sc, const char *str, s7_pointer e"
 .Sh DESCRIPTION
 .Sh EXAMPLES
 .Bd -literal -offset indent
-verbatim code here...
 .Ed
 .Pp
 .Sh SEE ALSO
-.Xr s7_c_objects 3 ,
+
 .Sh AUTHORS
 .An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
 .An Mike Scholz

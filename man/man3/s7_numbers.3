@@ -81,30 +81,6 @@ returns the Scheme object a+bi
 .Ft char
 .Fn *s7_number_to_string "s7_scheme *sc, s7_pointer obj, s7_int radix"
 (number->string obj radix)
-.Ft bool
-.Fn  s7_is_vector "s7_pointer p"
-(vector? p)
-.Ft s7_int
-.Fn s7_vector_length "s7_pointer vec"
-(vector-length vec)
-.Ft s7_int
-.Fn s7_vector_rank "s7_pointer vect"
-number of dimensions in vect
-.Ft s7_int
-.Fn s7_vector_dimension "s7_pointer vec, s7_int dim"
-.Ft s7_pointer
-.Fn *s7_vector_elements "s7_pointer vec"
-a pointer to the array of s7_pointers
-.Ft s7_int
-.Fn *s7_int_vector_elements "s7_pointer vec"
-.Ft s7_double
-.Fn *s7_float_vector_elements "s7_pointer vec"
-.Ft bool
-.Fn  s7_is_float_vector "s7_pointer p"
-(float-vector? p)
-.Ft bool
-.Fn  s7_is_int_vector "s7_pointer p"
-(int-vector? p)
 
 If compiled with GMP:
 .Bd -literal -offset indent

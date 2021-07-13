@@ -27,6 +27,9 @@ Make a string that will never be GC'd
 .Ft s7_int
 .Fn s7_string_length "s7_pointer str"
 (string-length str)
+.Ft char*
+.Fn s7_object_to_c_string "s7_scheme *sc, s7_pointer obj"
+same as object->string but returns a C char* directly; the returned value should be freed by the caller
 .Sh DESCRIPTION
 .Sh EXAMPLES
 .Bd -literal -offset indent
