@@ -111,45 +111,6 @@ static s7_pointer g_cstructs_are_equivalent(s7_scheme *sc, s7_pointer args)
 
 /* **************************************************************** */
 /* section: getters and setters */
-static s7_pointer g_cstruct_ref(s7_scheme *sc, s7_pointer args)
-{
-#ifdef DEBUG_TRACE
-    log_debug("g_cstruct_ref");
-#endif
-#define g_cstruct_ref_help "(cstruct-ref b i) returns the cstruct value at index i."
-#define g_cstruct_ref_sig s7_make_signature(sc, 3, s7_t(sc), s7_make_symbol(sc, "cstruct?"), s7_make_symbol(sc, "integer?"))
-    struct cstruct_s *g;
-    size_t index;
-    s7_int typ;
-    s7_pointer ind, obj;
-    if (s7_list_length(sc, args) != 2)
-        return(s7_wrong_number_of_args_error(sc, "cstruct-ref takes 2 arguments: ~~S", args));
-    obj = s7_car(args);
-    typ = s7_c_object_type(obj);
-    if (typ != cstruct_t)
-        return(s7_wrong_type_arg_error(sc, "cstruct-ref", 1, obj, "a cstruct"));
-    g  = (struct cstruct_s *)s7_c_object_value(obj);
-    if (s7_is_null(sc, s7_cdr(args))) /* this is for an (obj) test */
-        return(s7_make_integer(sc, 32));
-    /* ind = s7_cadr(args); */
-    /* if (s7_is_integer(ind)) */
-    /*     index = (size_t)s7_integer(ind); */
-    /* else  */
-    /*     { */
-    /*         if (s7_is_symbol(ind)) /\* ((cstruct 'empty) b) etc *\/ */
-    /*             { */
-    /*                 s7_pointer val; */
-    /*                 val = s7_symbol_local_value(sc, ind, g_cstruct_methods); */
-    /*                 if (val != ind) */
-    /*                     return(val); */
-    /*             } */
-    /*         return(s7_wrong_type_arg_error(sc, "cstruct-ref", 2, ind, "an integer")); */
-    /*     } */
-    /* if (index < g->size) */
-    /*     return(s7_make_real(sc, g->data[index])); */
-    /* return(s7_out_of_range_error(sc, "(implicit) cstruct-ref", 2, ind, "should be less than cstruct length")); */
-}
-
 static s7_pointer g_cstruct_set(s7_scheme *sc, s7_pointer args)
 {
 #ifdef DEBUG_TRACE
@@ -491,7 +452,7 @@ int _register_cstruct_fns(s7_scheme *sc)
                                  MAKE_CSTRUCT_FORMAL_PARAMS,
                                  g_new_cstruct_help);
 
-    s7_define_typed_function(sc, "cstruct-ref", g_cstruct_ref, 2, 0, false, g_cstruct_ref_help, g_cstruct_ref_sig);
+    s7_define_typed_function(sc, "cstruct-ref", g_cstruct_ref, 2, 0, false, G_CSTRUCT_REF_HELP, G_CSTRUCT_REF_SIG);
     /* s7_c_type_set_getter(sc, g_cstruct_type, s7_name_to_value(sc, "cstruct-ref")); */
     s7_define_typed_function(sc, "cstruct-set!", g_cstruct_set, 3, 0, false, g_cstruct_set_help, g_cstruct_set_sig);
     /* s7_c_type_set_setter(sc, g_cstruct_type, s7_name_to_value(sc, "cstruct-set!")); */
@@ -541,7 +502,7 @@ int _make_c_type(s7_scheme *sc)
     /* s7_c_type_set_is_equal(sc, cstruct_t, g_cstructs_are_equal); */
     /* s7_c_type_set_is_equivalent(sc, cstruct_t, g_cstructs_are_equivalent); */
     /* s7_c_type_set_gc_mark(sc, cstruct_t, g_cstruct_gc_mark); */
-    /* s7_c_type_set_ref(sc, cstruct_t, g_cstruct_ref); */
+    s7_c_type_set_ref(sc, cstruct_t, g_cstruct_ref);
     /* s7_c_type_set_set(sc, cstruct_t, g_cstruct_set); */
     /* s7_c_type_set_length(sc, cstruct_t, g_cstruct_length); */
     /* s7_c_type_set_copy(sc, cstruct_t, g_cstruct_copy); */
@@ -564,29 +525,71 @@ s7_int configure_s7_cstruct_type(s7_scheme *s7)
 
 /* **************************************************************** */
 /* section: misc */
-/* our cstruct does not behave line a list, we don't need these: */
+s7_pointer cstruct_lookup_kw(s7_scheme *s7,
+                             struct cstruct_s *cstruct, s7_pointer kw)
+{
+#ifdef DEBUG_TRACE
+    log_debug("cstruct_lookup_kw");
+#endif
+    if (kw == s7_make_keyword(s7, "c"))
+        return s7_character(cstruct->c);
+    if (kw == s7_make_keyword(s7, "i"))
+        return s7_integer(cstruct->i);
+}
 
-/* static s7_pointer g_cstruct_length(s7_scheme *sc, s7_pointer args) */
-/* { */
-/*     struct cstruct_s *g = (struct cstruct_s *)s7_c_object_value(s7_car(args)); */
-/*     return(s7_make_integer(sc, 1)); */
-/* } */
+/** g_cstruct_ref
 
-/* static s7_pointer g_cstruct_reverse(s7_scheme *sc, s7_pointer args) */
-/* { */
-/*     size_t i, j; */
-/*     struct cstruct_s *g, *g1; */
-/*     s7_pointer new_g; */
-/*     if (!s7_is_null(sc, s7_cdr(args))) */
-/*         return(s7_wrong_number_of_args_error(sc, "(cstruct-)reverse", args)); */
-/*     g = (struct cstruct_s *)s7_c_object_value(s7_car(args)); */
-/*     /\* new_g = g_new_cstruct(sc, s7_cons(sc, s7_make_integer(sc, g->size), s7_nil(sc))); *\/ */
-/*     /\* g1 = (struct cstruct_s *)s7_c_object_value(new_g); *\/ */
-/*     /\* for (i = 0, j = g->size - 1; i < g->size; i++, j--) *\/ */
-/*     /\*     g1->data[i] = g->data[j]; *\/ */
-/*     /\* return(new_g); *\/ */
-/*     return s7_car(args); */
-/* } */
+    function called when objects of type cstruct are evaluated as
+    functions, i.e. when they occur in function position (car of a
+    list).
+
+    takes two args, a cstruct object and a keyword to look up in the object.
+ */
+#define G_CSTRUCT_REF_HELP "(cstruct-ref b i) returns the cstruct value at index i."
+#define G_CSTRUCT_REF_SIG s7_make_signature(sc, 3, s7_t(sc), s7_make_symbol(sc, "cstruct?"), s7_make_symbol(sc, "integer?"))
+static s7_pointer g_cstruct_ref(s7_scheme *s7, s7_pointer args)
+{
+#ifdef DEBUG_TRACE
+    log_debug("g_cstruct_ref");
+#endif
+    struct cstruct_s *g;
+    size_t index;
+    s7_int typ;
+    s7_pointer obj;
+    if (s7_list_length(s7, args) != 2)
+        return(s7_wrong_number_of_args_error(s7, "cstruct-ref takes 2 arguments: ~~S", args));
+
+    obj = s7_car(args);
+    typ = s7_c_object_type(obj);
+    if (typ != cstruct_t)
+        return(s7_wrong_type_arg_error(s7, "cstruct-ref", 1, obj, "a cstruct"));
+    g  = (struct cstruct_s *)s7_c_object_value(obj);
+
+    if (s7_is_null(s7, s7_cdr(args))) /* this is for an (obj) test */
+        return(s7_wrong_type_arg_error(s7, "cstruct-ref", 1, obj, "missing keyword arg"));
+        /* return(s7_make_integer(s7, 32)); */
+
+    /* kw arg = name of field, find it field in the object */
+    /* symbol arg = name of method, find it in object's method table */
+    s7_pointer arg = s7_cadr(args);
+    if (s7_is_keyword(arg))
+        return cstruct_lookup_kw(s7, g, arg);
+    else {
+        if (s7_is_symbol(arg)) { /* ((cstruct 'empty) b) etc */
+            /* in this case, arg is a method sym, which we lookup in
+               the method table of the object */
+            s7_pointer val;
+            /* g_cstruct_methods as env in which to lookup arg */
+            val = s7_symbol_local_value(s7, arg, g_cstruct_methods);
+            if (val != arg)
+                return(val);
+            else
+                ; /* found self-referring method? method not found? */
+        } else
+            return(s7_wrong_type_arg_error(s7, "cstruct-ref",
+                                           2, arg, "a kw or sym"));
+    }
+}
 
 /* /section: misc */
 
