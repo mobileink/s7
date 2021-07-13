@@ -14,9 +14,9 @@
 #include<stdlib.h>
 #include <unistd.h>
 
+/* #include "log.h" */
 #include "s7.h"
 
-/* #include "bazel.h" */
 #include "cstruct.h"
 #include "cstruct_s7.h"
 
@@ -71,6 +71,8 @@ int run_cstruct(s7_scheme *s7)
 
     s7_pointer lf;
     lf =  s7_load(s7, load_script);
+    printf("load result: %s\n",
+           s7_object_to_c_string(s7, lf));
 
     printf("calling cstruct handler\n");
     s7_pointer args =  s7_list(s7,

@@ -24,6 +24,14 @@ static s7_pointer g_cstruct_methods;
   * misc
  */
 
+void debug_print_s7(s7_scheme *s7, char *label, s7_pointer obj)
+{
+    s7_pointer p = s7_current_output_port(s7);
+    s7_display(s7, s7_make_string(s7, label), p);
+    s7_display(s7, obj, p);
+    s7_newline(s7, p);
+}
+
 /* **************************************************************** */
 /* section: identity */
 #define g_is_cstruct_help "(cstruct? obj) returns #t if obj is a cstruct."
@@ -181,10 +189,53 @@ static char *g_cstruct_display(s7_scheme *sc, void *value)
     printf("g_cstruct_display\n");
 #endif
 
-    struct cstruct_s *b = (struct cstruct_s *)value;
-    s7_int i, len, prec, old_len, loc, bytes;
+    char workbuf[1024] = { '\0', };
+
+    char *msg = "FIXME g_cstruct_display!";
     char *buf, *flt;
-    return "FIXME g_cstruct_display!";
+
+#define WORKPTR (workptr = workbuf + strlen(workbuf))
+
+    /* s7_int i, len, prec, old_len, loc, bytes; */
+    struct cstruct_s *cs = (struct cstruct_s *)value;
+    char *workptr = workbuf;
+    sprintf(workptr, "#cstruct<\n"); WORKPTR;
+    sprintf(workptr, "  c = '%c',\n", cs->c); WORKPTR;
+    sprintf(workptr, "  s = \"%s\",\n", cs->s); WORKPTR;
+
+    sprintf(workptr, "  i = %d,\n", cs->i); WORKPTR;
+    if (cs->pi == NULL)
+        {sprintf(workptr, " pi = NULL,\n"); WORKPTR;}
+    else
+        {sprintf(workptr, " pi = %d,\n", *(cs->pi)); WORKPTR;}
+
+    sprintf(workptr, "  l = %ld,\n", cs->l); WORKPTR;
+    if (cs->pl == NULL)
+        {sprintf(workptr, " pl = NULL,\n"); WORKPTR;}
+    else
+        {sprintf(workptr, " pl = %d,\n", *(cs->pl)); WORKPTR;}
+
+    sprintf(workptr, "  f = %f,\n", cs->f); WORKPTR;
+    if (cs->pd == NULL)
+        {sprintf(workptr, " pf = NULL,\n"); WORKPTR;}
+    else
+        {sprintf(workptr, " pf = %f,\n", *(cs->pf)); WORKPTR;}
+    sprintf(workptr, ">#\n", cs->c);
+
+    sprintf(workptr, "  d = %f,\n", cs->d); WORKPTR;
+    if (cs->pd == NULL)
+        {sprintf(workptr, " pd = NULL,\n"); WORKPTR;}
+    else
+        {sprintf(workptr, " pd = %f,\n", *(cs->pd)); WORKPTR;}
+    sprintf(workptr, ">#");
+
+    int len = strlen(workbuf);
+    buf = (char *)calloc(1, len);
+    strncpy(buf, workbuf, len);
+
+    // printf("5 WWWW: %s\n", workbuf);
+    // printf("buf: %s\n", buf);
+    return buf;
     /* prec = s7_integer(s7_let_field_ref(sc, s7_make_symbol(sc, "float-format-precision"))); */
     /* if (prec >= 16) prec = 3; */
     /* len = b->size; */
@@ -212,6 +263,11 @@ static char *g_cstruct_display(s7_scheme *sc, void *value)
     /* return(buf); */
 }
 
+/** g_cstruct_display_readable
+
+    produces a "roundtrippable" string, one that when read by the reader
+    results in an object equal to the original.
+ */
 static char *g_cstruct_display_readably(s7_scheme *sc, void *value)
 {
 #ifdef DEBUG_TRACE
@@ -220,8 +276,14 @@ static char *g_cstruct_display_readably(s7_scheme *sc, void *value)
 
     char *buf, *flt;
     s7_int i, len, loc, bytes;
+    char *msg = "FIXME g_cstruct_display readably!";
+
+    buf = (char *)calloc(1, strlen(msg));
+    strncpy(buf, msg, strlen(msg));
+
     struct cstruct_s *b = (struct cstruct_s *)value;
-    return "FIXME: g_cstruct_display_readably";
+    return buf;
+
     /* len = b->size; */
     /* buf = (char *)calloc((len + 1) * 64, sizeof(char)); */
     /* loc = snprintf(buf, (len + 1) * 64, "(cstruct"); */
@@ -246,10 +308,12 @@ static char *g_cstruct_display_readably(s7_scheme *sc, void *value)
 
 /* **************************************************************** */
 /* section: serialization */
-static s7_pointer g_cstruct_to_string(s7_scheme *sc, s7_pointer args)
+static s7_pointer g_cstruct_to_string(s7_scheme *s7, s7_pointer args)
 {
 #ifdef DEBUG_TRACE
-    printf("g_cstruct_to_string\n");
+    printf("g_cstruct_to_string; arglen: %d\n",
+           s7_list_length(s7, args));
+    debug_print_s7(s7, "to_string cdr: ", s7_cdr(args));
 #endif
 
     s7_pointer obj, choice;
@@ -257,11 +321,12 @@ static s7_pointer g_cstruct_to_string(s7_scheme *sc, s7_pointer args)
     obj = s7_car(args);
     if (s7_is_pair(s7_cdr(args)))
         choice = s7_cadr(args);
-    else choice = s7_t(sc);
-    if (choice == s7_make_keyword(sc, "readable"))
-        descr = g_cstruct_display_readably(sc, s7_c_object_value(obj));
-    else descr = g_cstruct_display(sc, s7_c_object_value(obj));
-    obj = s7_make_string(sc, descr);
+    else choice = s7_t(s7);
+    if (choice == s7_make_keyword(s7, "readable"))
+        descr = g_cstruct_display_readably(s7, s7_c_object_value(obj));
+    else descr = g_cstruct_display(s7, s7_c_object_value(obj));
+    /* printf("g_cstruct_display => %s", descr); */
+    obj = s7_make_string(s7, descr);
     free(descr);
     return(obj);
 }
@@ -295,20 +360,69 @@ static s7_pointer g_cstruct_init_from_s7(s7_scheme *s7, struct cstruct_s *cs, s7
 {
 #ifdef DEBUG_TRACE
     printf("g_cstruct_init_from_s7\n");
+    debug_print_s7(s7, "INIT ARGS: ", args);
 #endif
-    s7_pointer arg1;
-    arg1 = s7_car(args);
-    if (!s7_is_character(arg1)) {
-        return(s7_wrong_type_arg_error(s7, "make-cstruct",
-                                       1, arg1, "a char"));
+
+    //FIXME: is this the right way to cdr over a list?
+    s7_pointer arg = s7_car(args);
+    s7_pointer cdr  = s7_cdr(args);
+    int i = 0;
+    while ( !s7_is_unspecified(s7, arg) ) {
+        /* s7_display(s7, s7_make_integer(s7, i), p); */
+        /* s7_display(s7, s7_make_string(s7, "arg: "), p); */
+        /* s7_display(s7, arg, p); */
+        /* s7_newline(s7, p); */
+
+        switch(i) {
+        case 0:
+            if (!s7_is_character(arg)) {
+                return(s7_wrong_type_arg_error(s7, "make-cstruct",
+                                               1, arg, "a char"));
+            }
+            cs->c = s7_character(arg);
+            break;
+        case 1:
+            cs->s = s7_string(arg);
+        case 2:                 /* int */
+            cs->i = s7_integer(arg);
+            break;
+        case 3:                 /* int* */
+            cs->pi = (int*)calloc(1, sizeof(int));
+            *cs->pi = s7_integer(arg);
+            break;
+        case 4:                 /* long */
+            /* fixme: what is long in Scheme? */
+            cs->l = s7_integer(arg);
+            break;
+        case 5:                 /* long* */
+            cs->pl = (int*)calloc(1, sizeof(double));
+            *cs->pl = s7_integer(arg);
+            break;
+        case 6:                 /* float */
+            cs->f = s7_real(arg);
+            break;
+        case 7:                 /* float* */
+            cs->pf = (int*)calloc(1, sizeof(float));
+            *cs->pf = s7_real(arg);
+            break;
+        case 8:                 /* double */
+            cs->d = s7_real(arg);
+            break;
+        case 9:                 /* double* */
+            cs->pd = (int*)calloc(1, sizeof(double));
+            *cs->pd = s7_real(arg);
+            break;
+        }
+        arg = s7_car(cdr);
+        cdr  = s7_cdr(cdr);
+        i++;
     }
-    cs->c = s7_character(arg1);
-    cs->s = strdup("howdy");
     return NULL;
 }
 
 /* docstring passed to the s7_define_.. used to register the fn in Scheme */
 #define g_new_cstruct_help "(make-cstruct) returns a new cstruct with randome data"
+#define MAKE_CSTRUCT_FORMAL_PARAMS "(c \#\\a) (s \"hello\") (i 1) (pi 2) (l 3) (pl 4) (f 5.0) (pf 6.0) (d 7) (pd 8)"
 static s7_pointer g_new_cstruct(s7_scheme *s7, s7_pointer args)
 {
 #ifdef DEBUG_TRACE
@@ -320,7 +434,10 @@ static s7_pointer g_new_cstruct(s7_scheme *s7, s7_pointer args)
     if (g_cstruct_init_from_s7(s7, new_cstruct, args) != NULL) {
         printf("OOPS\n");
     }
+    printf("new cs->c: %c\n", new_cstruct->c);
     printf("new cs->s: %s\n", new_cstruct->s);
+    printf("new cs->i: %d\n", new_cstruct->i);
+    printf("new cs->pi: %d\n", (*new_cstruct->pi));
 
     s7_pointer new_cstruct_s7 = s7_make_c_object(s7, cstruct_t,
                                                  (void *)new_cstruct);
@@ -371,8 +488,11 @@ int _register_cstruct_fns(s7_scheme *sc)
 #ifdef DEBUG_TRACE
     printf("_register_cstruct_fns\n");
 #endif
-    s7_define_safe_function(sc, "make-cstruct", g_new_cstruct, 1, 0, false, g_new_cstruct_help);
     /* s7_define_safe_function(sc, "cstruct", g_to_cstruct, 0, 0, true, g_cstruct_help); */
+    s7_define_safe_function_star(sc, "make-cstruct", g_new_cstruct,
+                                 MAKE_CSTRUCT_FORMAL_PARAMS,
+                                 g_new_cstruct_help);
+
     s7_define_typed_function(sc, "cstruct-ref", g_cstruct_ref, 2, 0, false, g_cstruct_ref_help, g_cstruct_ref_sig);
     /* s7_c_type_set_getter(sc, g_cstruct_type, s7_name_to_value(sc, "cstruct-ref")); */
     s7_define_typed_function(sc, "cstruct-set!", g_cstruct_set, 3, 0, false, g_cstruct_set_help, g_cstruct_set_sig);
@@ -394,9 +514,10 @@ int _register_cstruct_fns(s7_scheme *sc)
     /* s7_define_function_star(sc, "unsafe-cstructs3", g_cstructs, "(frequency 4) (scaler 1) (asdf 32)", "test for function*"); */
     /* s7_define_function_star(sc, "unsafe-cstructs4", g_cstructs, "(frequency 4) (scaler 1) (asdf 32) etc", "test for function*"); */
     /* s7_define_safe_function_star(sc, "cstructs5", g_cstructs, "(frequency 4) :allow-other-keys", "test for function*"); */
-    g_cstruct_methods = s7_eval_c_string(sc, "(openlet (immutable! (inlet 'float-vector? (lambda (p) #t) \
+    g_cstruct_methods = s7_eval_c_string(sc, "(openlet (immutable! (inlet 'float-vector? (lambda (p) (display \"foo \") #t) \
 								       'signature (lambda (p) (list '#t 'cstruct? 'integer?)) \
 								       'type cstruct? \
+								       'foo (lambda (p) 999) \
 								       'arity (lambda (p) (cons 1 1)) \
 								       'aritable? (lambda (p args) (= args 1)) \
 								       'vector-dimensions (lambda (p) (list (length p))) \
@@ -428,7 +549,7 @@ int _make_c_type(s7_scheme *sc)
     /* s7_c_type_set_copy(sc, cstruct_t, g_cstruct_copy); */
     /* s7_c_type_set_reverse(sc, cstruct_t, g_cstruct_reverse); */
     /* s7_c_type_set_fill(sc, cstruct_t, g_cstruct_fill); */
-    /* s7_c_type_set_to_string(sc, cstruct_t, g_cstruct_to_string); */
+    s7_c_type_set_to_string(sc, cstruct_t, g_cstruct_to_string);
     return 0;
 }
 
