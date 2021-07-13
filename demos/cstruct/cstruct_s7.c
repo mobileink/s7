@@ -28,6 +28,7 @@ static s7_pointer g_cstruct_methods;
 
 void debug_print_s7(s7_scheme *s7, char *label, s7_pointer obj)
 {
+    log_debug("debug_print_s7:");
     s7_pointer p = s7_current_output_port(s7);
     s7_display(s7, s7_make_string(s7, label), p);
     s7_display(s7, obj, p);
@@ -313,8 +314,7 @@ static char *g_cstruct_display_readably(s7_scheme *sc, void *value)
 static s7_pointer g_cstruct_to_string(s7_scheme *s7, s7_pointer args)
 {
 #ifdef DEBUG_TRACE
-    log_debug("g_cstruct_to_string; arglen: %d\n",
-           s7_list_length(s7, args));
+    log_debug("g_cstruct_to_string");
     debug_print_s7(s7, "to_string cdr: ", s7_cdr(args));
 #endif
 
@@ -436,10 +436,6 @@ static s7_pointer g_new_cstruct(s7_scheme *s7, s7_pointer args)
     if (g_cstruct_init_from_s7(s7, new_cstruct, args) != NULL) {
         log_debug("OOPS");
     }
-    log_debug("new cs->c: %c\n", new_cstruct->c);
-    log_debug("new cs->s: %s\n", new_cstruct->s);
-    log_debug("new cs->i: %d\n", new_cstruct->i);
-    log_debug("new cs->pi: %d\n", (*new_cstruct->pi));
 
     s7_pointer new_cstruct_s7 = s7_make_c_object(s7, cstruct_t,
                                                  (void *)new_cstruct);
