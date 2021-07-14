@@ -30,14 +30,57 @@ s7_load is similar to the scheme-side load function. Its argument is a file name
 Prepends
 .Em dir
 to path and returns the resulting new path.
+.Sh AUTOLOAD
+If s7 encounters an unbound variable, it first looks to see if it has any autoload information about it. This info can be declared via
+.Em autoload ,
+a function of two arguments, the symbol that triggers the autoload, and either a filename or a function. If a filename, s7 loads that file; if a function, it is called with one argument, the current (calling) environment.
+.Pp
+.Bd -literal -offset indent
+(autoload 'channel-distance "dsp.scm")
+;; now if we subsequently call channel-distance but forget to load "dsp.scm" first,
+;;   s7 loads "dsp.scm" itself, and uses its definition of channel-distance.
+;;   The C-side equivalent is s7_autoload.
+
+;; here is the cload.scm case, loading j0 from the math library if it is called:
+(autoload 'j0
+	  (lambda (e)
+	    (unless (provided? 'cload.scm)
+	      (load "cload.scm"))
+	    (c-define '(double j0 (double)) "" "math.h")
+	    (varlet e 'j0 j0)))
+.Ed
+.Pp
+The entity (hash-table or environment probably) that holds the autoload info is named
+.Vt *autoload* .
+If after checking autoload, the symbol is still unbound, s7 calls
+.Em *unbound-variable-hook* .
+The offending symbol is named 'variable in the hook environment. If after running
+.Em *unbound-variable-hook* ,
+the symbol is still unbound, s7 calls the error handler.
+.Pp
+The autoloader knows about s7 environments used as libraries, so, for example, you can
+.Em (autoload 'j0 "libm.scm") ,
+then use j0 in scheme code. The first time s7 encounters j0, j0 is undefined, so s7 loads
+.Pa libm.scm .
+That load returns the C math library as the environment
+.Vt *libm* .
+s7 then automatically looks for j0 in
+.Vt *libm* ,
+and defines it for you. So the result is the same as if you had defined j0 yourself in C code. You can use the r7rs library mechanism here, or
+.Em with-let ,
+or whatever you want! (In Snd, libc, libm, libdl, and libgdbm are automatically tied into s7 via autoload, so if you call, for example, frexp,
+.P libm.scm
+is loaded, and frexp is exported from the
+.Vt *libm*
+environment, then the evaluator soldiers on, as if frexp had always been defined in s7). You can also import all of (say) gsl into the current environment via
+.Em (varlet (curlet) *libgsl*) .
 .Sh EXAMPLES
 You can also include an 'init_args field to pass arguments to init_func. Here's an example that includes init_args:
 .Bd -literal -offset indent
-verbatim code here...
 .Ed
 .Pp
 .Sh SEE ALSO
-.Xr s7_c_objects 3 ,
+.Xr s7_features 3
 .Sh AUTHORS
 .An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
 .An Mike Scholz

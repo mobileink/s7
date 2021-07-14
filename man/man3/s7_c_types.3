@@ -26,9 +26,9 @@
 .Ft void
 .Fn s7_c_type_set_is_equivalent "s7_scheme *sc, s7_int typetag, s7_pointer (*is_equivalent)(s7_scheme *sc, s7_pointer args)"
 .Ft void
-.Fn s7_c_type_set_ref "s7_scheme *sc, s7_int typetag, s7_pointer (*ref)       (s7_scheme *sc, s7_pointer args)"
+.Fn s7_c_type_set_ref "s7_scheme *sc, s7_int typetag, s7_pointer (*ref_fn)       (s7_scheme *sc, s7_pointer args)"
 .Ft void
-.Fn s7_c_type_set_set "s7_scheme *sc, s7_int typetag, s7_pointer (*set)       (s7_scheme *sc, s7_pointer args)"
+.Fn s7_c_type_set_set "s7_scheme *sc, s7_int typetag, s7_pointer (*set_fn)       (s7_scheme *sc, s7_pointer args)"
 .Ft void
 .Fn s7_c_type_set_length "s7_scheme *sc, s7_int typetag, s7_pointer (*length)    (s7_scheme *sc, s7_pointer args)"
 .Ft void
@@ -107,20 +107,50 @@ See
 above.
 .El
 .Pp
-.Fn s7_c_type_set_ref "s7_scheme *sc, s7_int typetag, s7_pointer (*ref)(s7_scheme *sc, s7_pointer args)"
-Sets the function called when the c-object is treated as an applicable object in Scheme; i.e. at the car of a list. The rest of the list is passed to the ref function as the arguments:
-.Em (obj ...)
-in Scheme calls the function set as the "ref" function.
+.Fn s7_c_type_set_ref "sc, typetag, ref_fn"
+registers
+.Em ref_fn
+as the function called when the c-object is treated as an applicable object in Scheme; i.e. at the car of a list. The c-object will be passed as the first argument, followed by the rest of the list. In other words,
+.Em ref_fn
+will behave just like an OO method. To evaluate
+.Em (obj ...) ,
+s7 will call the
+.Em ref_fn
+registered for the type of
+.Em obj
+and pass
+.Em obj
+as the "self" or "this" argument.
+.Sy NOTE
+the conceptual difference between this and the notion of a
+.Em myobj-ref
+function. The latter is usually intended as a lookup function, e.g.
+.Em (myobj-ref x i)
+returns the value at index i.  But
+.Em ref_fn
+can do anything; it essentially turns the objects it is "attached" to (via their type) into functions.
 .Pp
-.Fn s7_c_type_set_set
-Sets the function called when a c-object of this type occurs as the target of a generalized
+The test code for
+.Em g_block
+in
+.Pa s7/s7test.scm
+has
+.Em ref_fn
+doing double-duty: it is registered as the object's applicable function using this registration function, but it is also bound to symbol
+.Em block-ref .
+The latter takes two args, an object and an index; but in function position it only needs one arg, the index (?).
+.Pp
+.Fn s7_c_type_set_set "sc, typetag, set_fn"
+registers the function to be called when a c-object of this type occurs as the target of a generalized
 .Em set!
 application, e.g.
 .Em (set! (obj ...) val) .
-Scheme calls the "set" function, and the arguments in the set! form are passed as a flattened list.
+Scheme calls the registered
+.Em set
+function, and the arguments in the set! form are passed as a flattened list.
 .Pp
 .Fn s7_c_type_set_length
-The function called when the object is asked what its length is.
+registers the function to be called when the object is asked what its length is.
 .Pp
 .Fn s7_c_type_set_copy
 The function called when a copy of the object is needed.
@@ -208,9 +238,15 @@ is set to indicate the error.
 
 .Sh ERRORS
 .Sh SEE ALSO
-.Xr s7_c_pointers 3 ,
-.Xr SRFI 17 Generalize set! https://srfi.schemers.org/srfi-17/srfi-17.html
-.Xr Guile manual 6.7.8 Procedures with Setters https://www.gnu.org/software/guile/manual/html_node/Procedures-with-Setters.html
+.Xr s7_c_pointers 3
+.Pp
+.Em SRFI 17 Generalized set!
+.Pa https://srfi.schemers.org/srfi-17/srfi-17.html
+.Pp
+.Em SRFI 123 Generic accessor and modifier operators
+.Pa https://srfi.schemers.org/srfi-123/srfi-123.html
+.Em Guile manual 6.7.8 Procedures with Setters
+.Pa https://www.gnu.org/software/guile/manual/html_node/Procedures-with-Setters.html
 .Sh AUTHORS
 .An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
 .An Mike Scholz
