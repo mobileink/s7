@@ -2,25 +2,31 @@
 .Dt S7 3
 .Sh NAME
 .Nm S7
-.Nd Iterators
+.Nd Sequences
 .Sh DESCRIPTION
 See
 .Pa https://ccrma.stanford.edu/software/snd/snd/s7.html#generalizedset
 .Pp
-"Underlying some of these [sequence] functions are generic iterators, also built-into s7:
+"The somewhat non-standard generic sequence functions in s7 are:
+.Pp
 .Bd -literal -offset indent
-(make-iterator sequence)
-(iterator? obj)
-(iterate iterator)
-(iterator-sequence iterator)
-(iterator-at-end? iterator)
+(sort! sequence less?)
+(reverse! sequence) and (reverse sequence)
+(fill! sequence value (start 0) end)
+(copy obj) and (copy source destination (start 0) end)
+(object->string obj)
+(object->let obj)
+(length obj)
+(append . sequences)
+(map func . sequences) and (for-each func . sequences)
+(equivalent? obj1 obj2)
 .Ed
 .Sh EXAMPLES
 .Bd -literal -offset indent
 .Ed
 .Pp
 .Sh SEE ALSO
-.Xr s7_sequences 3
+.Xr s7_iterators 3
 .Sh AUTHORS
 .An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
 .An Mike Scholz

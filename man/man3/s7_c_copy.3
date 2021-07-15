@@ -1,0 +1,81 @@
+.Dd July 10, 2021
+.Dt S7 3
+.Sh NAME
+.Nm S7
+.Nd Copy operations
+.Sh LIBRARY
+libs7, -ls7
+.Sh SYNOPSIS
+.In s7.h
+.Ft s7_pointer
+.Fn s7_copy "s7_scheme *sc, s7_pointer args"
+(copy ...)
+.Ft s7_pointer
+.Fn s7_vector_copy "s7_scheme *sc, s7_pointer old_vect"
+.Ft void
+.Fn s7_c_type_set_copy "s7_scheme *sc, s7_int ttag, s7_pointer (*copy_fn)(s7_scheme *sc, s7_pointer args))"
+.Sh DESCRIPTION
+.Fn s7_c_type_set_copy
+registers
+.Em copy_fn
+as an extension of the predefined Scheme
+.Em (copy ...)
+procedure for c-type
+.Em ttag .
+.Pp
+Application pseudo-logic (based on
+.Fn g_block_copy
+of
+.Sm off
+.Pa s7/s7test.scm
+):
+.Sm on
+.Pp
+
+    if arg1.type ==
+.Em ttag
+        if cdr(args) is pair
+            arg2 = cadr(args)
+            if arg2 not mutable return error
+            if arg2.type ==
+.Em ttag
+                // update arg2 from arg1
+                if optional 3rd arg
+.Em start
+(i.e. start copy from)
+                    update arg2 from arg1 starting at
+.Em start
+(of arg1)
+                else
+                    update arg2 from arg1
+            else // arg2.type !=
+.Em ttag
+                return error?
+                (g_block_copy assumes arg2 is a vector and copies data to it?)
+        else // only one arg, copy it
+            make a new object of type
+.Em ttag
+            copy arg1 data to new object
+            return new object
+    else
+        //  arg1.type !=
+.Em ttag
+            ...
+
+.Sh EXAMPLES
+.Bd -literal -offset indent
+verbatim code here...
+.Ed
+.Pp
+.Sh SEE ALSO
+.Xr s7_c_object_let 3 ,
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support
