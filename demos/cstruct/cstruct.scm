@@ -1,6 +1,88 @@
 (display "hello from ./demos/cstruct.scm")
 (newline)
 
+(define (applicator-test)
+  (display "APPLICATOR-TEST") (newline)
+
+  (define cs1 (make-cstruct))
+
+  ;; specialized ref
+  (display (cstruct-ref cs1 :str)) (newline)
+
+  ;; applicator ref - redirects to cstruct-ref
+  (display (cs1 :str)) (newline)
+
+  ;; applicator method - looks up symbol in method table
+  (display "VECTOR-REF") (newline)
+  (display (keyword? 'a)) (newline)
+  (display (cs1 'vector-ref)) (newline)
+  (display ((cs1 'vector-ref) cs1 :str)) (newline)
+
+  ;; methods whose names match Scheme proc names extend the latter;
+  ;; here built-in vector ref delegates the call to our method, which is (cs1 'vector-ref)
+  (display (vector-ref cs1 :str)) (newline) ;; -> ((cs1 'vector-ref) cs1 :str)
+
+  ;; we can do this for any predefined proc, no matter how perverse:
+  ;; (display (memq cs1 :str)) (newline) ;; => ;memq argument 2, :str, is a symbol but should be a list
+  (display "PERVERSE MEMQ") (newline)
+  (display (cs1 'memq)) (newline)
+  (display ((cs1 'memq) cs1 :str)) (newline) ;; => ;memq argument 2, :str, is a symbol but should be a list
+
+  ;; we can define whatever methods we please
+  (display "CUSTOM") (newline)
+  (display ((cs1 'foo) cs1)) (newline) ;; => "hello from foo method!"
+
+  ;; but if there is no procedure with same name we cannot do this:
+  ;; (display (foo cs1 :str)) (newline) => unbound variable foo
+
+  ;; our methods will only extend a predefined set of procs (vector-ref, arity, etc.)
+  (define (foo o arg) "hi from foo proc")
+  (display (foo cs1 :str)) (newline) ;; => "hi from foo proc", not "hello from foo method!"
+
+  (display ((cs1 'foo) cs1)) (newline) ;; => "hello from foo method!"
+
+  ;; (display (object->string cs1 :readable)) (newline)
+  ;; (display (object->string cs2)) (newline)
+  )
+
+(define (method-test)
+  (display "METHOD-TEST") (newline)
+
+  (display (format #f "(keyword? :a) ~A" (keyword? (string->keyword "a"))))
+  (newline)
+  (display (format #f "(symbol? :a) ~A" (symbol? (string->keyword "a"))))
+  (newline)
+
+
+  (define cs1 (make-cstruct))
+  ;; (define sub1 (make-cstruct :str "substruct1"))
+  ;; (set! (cs1 :substruct) sub1)
+
+  (display (cs1 'vector-ref)) (newline)
+
+  (display (cstruct-ref cs1 :str)) (newline)
+  (display ((cs1 'vector-ref) cs1 :str)) (newline)
+  (display (cs1 :str)) (newline)
+
+  ;; (display (object->string cs1 :readable)) (newline)
+  ;; (display (object->string cs2)) (newline)
+  )
+
+(define (copy-test)
+
+  (define cs1 (make-cstruct))
+  ;; (define sub1 (make-cstruct :str "substruct1"))
+  ;; (set! (cs1 :substruct) sub1)
+
+  (define cs2 (copy cs1))
+
+  ;; (display (object->string cs1 :readable)) (newline)
+  (display (object->string cs2)) (newline)
+
+  (display (#(a b c) 1)) (newline)
+
+  )
+
 (define (equality)
 
   (define cs1 (make-cstruct))
@@ -118,8 +200,10 @@
     ;; (newline)
 
     ;; (setters)
-
-    (equality)
+    ;; (equality)
+    ;; (copy-test)
+    (applicator-test)
+    ;; (method-test)
 
     ;; (set! (a :str) "bye")
 

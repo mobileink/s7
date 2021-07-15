@@ -9,7 +9,7 @@
 #include "cstruct.h"
 
 static s7_int cstruct_t = 0;
-static s7_pointer g_cstruct_methods;
+static s7_pointer g_cstruct_methods_let;
 
 /* forward decls */
 /* section: identity */
@@ -18,7 +18,6 @@ static s7_pointer g_is_cstruct(s7_scheme *s7, s7_pointer args);
 /* section: equality */
 static bool _cstructs_are_value_equal(struct cstruct_s *val1,
                                       struct cstruct_s *val2);
-static bool       _cstructs_are_c_eql(void *val1, void *val2);
 static s7_pointer g_cstructs_are_equal(s7_scheme *s7, s7_pointer args);
 static s7_pointer g_cstructs_are_equivalent(s7_scheme *s7, s7_pointer args);
 
@@ -26,9 +25,9 @@ static s7_pointer g_cstructs_are_equivalent(s7_scheme *s7, s7_pointer args);
 static s7_pointer g_cstruct_ref_specialized(s7_scheme *s7, s7_pointer args);
 static s7_pointer g_cstruct_set_specialized(s7_scheme *s7, s7_pointer args);
 
-static s7_pointer g_cstruct_ref_dispatcher(s7_scheme *s7, s7_pointer args);
+static s7_pointer g_cstruct_object_applicator(s7_scheme *s7, s7_pointer args);
 
-static int _register_get_and_set(s7_scheme *s7);
+static void _register_get_and_set(s7_scheme *s7);
 
 /* section: display */
 static char *g_cstruct_display(s7_scheme *s7, void *value);
@@ -54,15 +53,13 @@ enum formals_e {
 /* section: c-object destruction */
 static s7_pointer g_destroy_cstruct(s7_scheme *s7, s7_pointer obj);
 
-/* section: methods */
-static s7_pointer g_cstruct_method(s7_scheme *s7, s7_pointer args);
-
 /* section: extension methods */
-static void _register_extension_methods(s7_scheme *s7, s7_int cstruct_t);
+static void _register_c_type_methods(s7_scheme *s7, s7_int cstruct_t);
+static void _register_c_object_methods(s7_scheme *s7, s7_pointer cstruct);
 
 /* section: c-type configuration */
 static void   _register_cstruct_fns(s7_scheme *s7);
-static int    _make_c_type(s7_scheme *s7);
+
 /* this is the public API that clients call: */
 int configure_s7_cstruct_type(s7_scheme *s7); /* public */
 
@@ -186,19 +183,6 @@ static bool _cstructs_are_value_equal(struct cstruct_s *val1,
     numbers: both exact and numerically equal (=)
     pairs, vectors, bytevectors, records, strings: same mem address
  */
-static bool _cstructs_are_c_eql(void *val1, void *val2)
-{
-#ifdef DEBUG_TRACE
-    log_debug("_cstructs_are_c_eql");
-#endif
-    s7_int i, len;
-    struct cstruct_s *b1 = (struct cstruct_s *)val1;
-    struct cstruct_s *b2 = (struct cstruct_s *)val2;
-    if (val1 == val2) return(true);
-
-    /* distinct but equivalent? */
-    return(true);
-}
 
 /** g_cstructs_are_equal
 
@@ -288,7 +272,7 @@ static s7_pointer _cstruct_lookup_kw(s7_scheme *s7,
     if (kw == s7_make_keyword(s7, "c")) {
         return s7_make_character(s7, cstruct->c);
     }
-    if (kw == s7_make_keyword(s7, "s"))
+    if (kw == s7_make_keyword(s7, "str"))
         return s7_make_string(s7, cstruct->str);
     if (kw == s7_make_keyword(s7, "i"))
         return s7_make_integer(s7, cstruct->i);
@@ -309,7 +293,8 @@ static s7_pointer _cstruct_lookup_kw(s7_scheme *s7,
     if (kw == s7_make_keyword(s7, "pd"))
         return s7_make_real(s7, *cstruct->pd);
 
-    /* FIXME: ERROR */
+    return(s7_wrong_type_arg_error(s7, "cstruct-ref",
+                                       1, kw, "one of :c, :str, :i, etc."));
 }
 
 /* **************** */
@@ -329,7 +314,7 @@ static s7_pointer g_cstruct_ref_specialized(s7_scheme *s7, s7_pointer args)
 #endif
 
     struct cstruct_s *g;
-    size_t index;
+    /* size_t index; */
     s7_int typ;
     s7_pointer obj;
     if (s7_list_length(s7, args) != 2)
@@ -351,23 +336,14 @@ static s7_pointer g_cstruct_ref_specialized(s7_scheme *s7, s7_pointer args)
     if (s7_is_keyword(arg))
         return _cstruct_lookup_kw(s7, g, arg);
     else {
-        if (s7_is_symbol(arg)) { /* ((cstruct 'empty) b) etc */
-            /* in this case, arg is a method sym, which we lookup in
-               the method table of the object */
-            s7_pointer val;
-            /* g_cstruct_methods as env in which to lookup arg */
-            val = s7_symbol_local_value(s7, arg, g_cstruct_methods);
-            if (val != arg)
-                return(val);
-            else
-                ; /* found self-referring method? method not found? */
-        } else
-            return(s7_wrong_type_arg_error(s7, "cstruct-ref",
-                                           2, arg, "a kw or sym"));
+        return(s7_wrong_type_arg_error(s7, "cstruct-ref",
+                                       2, arg, "a keyword"));
     }
 }
 
-/** g_cstruct_ref_dispatcher
+/** g_cstruct_object_applicator
+
+    (more accurate: object_applicator, not essentially tied to ref)
 
     registered by s7_c_type_set_ref
 
@@ -388,17 +364,17 @@ static s7_pointer g_cstruct_ref_specialized(s7_scheme *s7, s7_pointer args)
     iow, it's a generic generic function, whereas generic ref is just
     a generic ref function. "meta generic?"
 
-    in practice, its a dispatcher. its job is to inspect the args and
+    in practice, its a dispatcher. sorta. its job is to inspect the args and
     decide what to do with them.
  */
-static s7_pointer g_cstruct_ref_dispatcher(s7_scheme *s7, s7_pointer args)
+static s7_pointer g_cstruct_object_applicator(s7_scheme *s7, s7_pointer args)
 {
 #ifdef DEBUG_TRACE
-    log_debug("g_cstruct_ref_dispatcher");
-    /* debug_print_s7(s7, "generic ARGS: ", s7_cdr(args)); */
+    log_debug("g_cstruct_object_applicator");
+    debug_print_s7(s7, "APPLICATOR ARGS: ", s7_cdr(args));
 #endif
 
-    /* no need to check arg1, its the "self" cstruct obj */
+    /* no need to check arg1, it's the "self" cstruct obj */
     /* s7_pointer g  = (struct cstruct_s *)s7_c_object_value(obj); */
 
     s7_pointer rest = s7_cdr(args);
@@ -407,8 +383,11 @@ static s7_pointer g_cstruct_ref_dispatcher(s7_scheme *s7, s7_pointer args)
                                        1, rest, "missing keyword arg"));
 
     s7_pointer op = s7_car(rest);
-    if (s7_is_keyword(op))
+
+    /* Currently s7 does not make a distinction between keywords and symbols; (keyword? :a) and (symbol? :a) both report true, and s7_is_ */
+    if (s7_is_keyword(op)) {
         if (op == s7_make_keyword(s7, "sumints")) {
+            /* demo arbitrary kw op, :sumints sums int values in obj */
             log_debug("running :sumints");
             s7_pointer obj = s7_car(args);
             struct cstruct_s *cs  = (struct cstruct_s *)s7_c_object_value(obj);
@@ -419,8 +398,27 @@ static s7_pointer g_cstruct_ref_dispatcher(s7_scheme *s7, s7_pointer args)
                                    + cs->ll
                                    + *cs->pll
                                    );
-        } else
+        } else {
             return g_cstruct_ref_specialized(s7, args);
+        }
+    } else {
+        if (s7_is_symbol(op)) { /* method access ((cstruct 'foo) b) etc */
+            s7_pointer val;
+            val = s7_symbol_local_value(s7, op, g_cstruct_methods_let);
+            if (val != op)
+                return(val);
+            else {
+                /* found self-referring method? method not found? methods table corrupt */
+                /* return(s7_wrong_type_arg_error(s7, "cstruct-ref", */
+                /*                                2, arg, "a kw or sym")); */
+                log_error("ERROR: corrupt object-methods-let?");
+                return NULL;
+            }
+	} else {
+            return(s7_wrong_type_arg_error(s7, "cstruct-ref",
+                                           2, op, "a keyword or symbol"));
+        }
+    }
 }
 
 /* **************** */
@@ -598,7 +596,7 @@ static s7_pointer g_cstruct_set_generic(s7_scheme *s7, s7_pointer args)
     return g_cstruct_set_specialized(s7, args);
 }
 
-static int _register_get_and_set(s7_scheme *s7)
+static void _register_get_and_set(s7_scheme *s7)
 {
     /* generic (SRFI 17) */
     s7_c_type_set_getter(s7, cstruct_t, s7_name_to_value(s7, "cstruct-ref"));
@@ -609,8 +607,8 @@ static int _register_get_and_set(s7_scheme *s7)
     /*               /\* s7_make_symbol(s7, "cstruct-ref"), *\/ */
     /*               s7_name_to_value(s7, "cstruct-set!")); */
 
-    /* set_ref should be called set_dispatcher or some such */
-    s7_c_type_set_ref(s7, cstruct_t, g_cstruct_ref_dispatcher);
+    /* set_ref should be called set_applicator or some such */
+    s7_c_type_set_ref(s7, cstruct_t, g_cstruct_object_applicator);
     s7_c_type_set_set(s7, cstruct_t, g_cstruct_set_generic);
 }
 
@@ -950,8 +948,7 @@ static s7_pointer g_new_cstruct(s7_scheme *s7, s7_pointer args)
     s7_pointer new_cstruct_s7 = s7_make_c_object(s7, cstruct_t,
                                                  (void *)new_cstruct);
 
-    s7_c_object_set_let(s7, new_cstruct_s7, g_cstruct_methods);
-    s7_openlet(s7, new_cstruct_s7);
+    _register_c_object_methods(s7, new_cstruct_s7);
 
     return(new_cstruct_s7);
 }
@@ -966,53 +963,9 @@ static s7_pointer g_destroy_cstruct(s7_scheme *s7, s7_pointer obj)
 #endif
     struct cstruct_s *cs = (struct cstruct_s*)s7_c_object_value(obj);
     cstruct_free(cs);
+    return NULL;
 }
 /* /section: c-object destruction */
-
-/* **************************************************************** */
-/* section: methods */
-#define G_CSTRUCT_METHOD_HELP "(cstruct-method m) returns the method m."
-#define G_CSTRUCT_METHOD_SIG s7_make_signature(s7, 3, s7_t(s7), s7_make_symbol(s7, "cstruct?"), s7_make_symbol(s7, "integer?"))
-static s7_pointer g_cstruct_method(s7_scheme *s7, s7_pointer args)
-{
-#ifdef DEBUG_TRACE
-    log_debug("g_cstruct_method");
-    debug_print_s7(s7, "cstruct_method args: ", args);
-#endif
-
-    struct cstruct_s *g;
-    s7_int typ;
-    s7_pointer obj;
-    if (s7_list_length(s7, args) != 1)
-        return(s7_wrong_number_of_args_error(s7, "cstruct-method takes 1 argument: ~~S", args));
-
-    obj = s7_car(args);
-    typ = s7_c_object_type(obj);
-    /* if (typ != cstruct_t) */
-    /*     return(s7_wrong_type_arg_error(s7, "cstruct-method", 1, obj, "a cstruct")); */
-    g  = (struct cstruct_s *)s7_c_object_value(obj);
-
-    /* if (s7_is_null(s7, s7_cdr(args))) /\* this is for an (obj) test *\/ */
-    /*     return(s7_wrong_type_arg_error(s7, "cstruct-ref", 1, obj, "missing symbol arg")); */
-        /* return(s7_make_integer(s7, 32)); */
-
-    /* symbol arg = name of method, find it in object's method table */
-    /* s7_pointer arg = s7_cadr(args); */
-    if (s7_is_symbol(obj)) { /* ((cstruct 'empty) b) etc */
-        /* in this case, arg is a method sym, which we lookup in
-           the method table of the object */
-        s7_pointer val;
-        /* g_cstruct_methods as env in which to lookup arg */
-        val = s7_symbol_local_value(s7, obj, g_cstruct_methods);
-        if (val != obj)
-            return(val);
-        else
-            ; /* found self-referring method? method not found? */
-    } else
-        return(s7_wrong_type_arg_error(s7, "cstruct-method",
-                                       2, obj, "a symbol"));
-}
-/* section: methods */
 
 /* section: extension methods */
 /* extension methods extend standard Scheme procedures like 'length'
@@ -1021,10 +974,46 @@ static s7_pointer g_cstruct_method(s7_scheme *s7, s7_pointer args)
    unsupported methods return #f (?)
  */
 
-static void _register_extension_methods(s7_scheme *s7, s7_int cstruct_t)
+#define METHODS_PREFIX   "(openlet (immutable! (inlet "
+#define METHODS_POSTFIX  ")))"
+
+#define OBJECT_METHODS \
+    "'float-vector? (lambda (p) (display \"foo \") #t) " \
+    "'signature (lambda (p) (list '#t 'cstruct? 'integer?)) " \
+    "'type cstruct? " \
+    "'foo (lambda (self) \"hello from foo method!\") " \
+    "'memq (lambda (self arg) \"hello from perverse memq method!\") " \
+    "'arity (lambda (p) (cons 1 1)) " \
+    "'aritable? (lambda (p args) (= args 1)) " \
+    "'vector-dimensions (lambda (p) (list (length p))) " \
+    "'empty (lambda (p) (zero? (length p))) " \
+    "'ref cstruct-ref " \
+    "'vector-ref cstruct-ref " \
+    "'vector-set! cstruct-set! "
+    /* "'reverse! cstruct-reverse! " \ */
+    /* "'subsequence subcstruct " \ */
+    /* "'append cstruct-append " */
+
+/* object methods: registered on each object, not type */
+static void _register_c_object_methods(s7_scheme *s7, s7_pointer cstruct)
 {
 #ifdef DEBUG_TRACE
-    log_debug("_register_extension_methods");
+    log_debug("_register_c_object_methods");
+#endif
+    static bool initialized = false;
+    if (!initialized) {
+        g_cstruct_methods_let = s7_eval_c_string(s7, METHODS_PREFIX OBJECT_METHODS METHODS_POSTFIX);
+        s7_gc_protect(s7, g_cstruct_methods_let);
+        initialized = true;
+    }
+    s7_c_object_set_let(s7, cstruct, g_cstruct_methods_let);
+    s7_openlet(s7, cstruct);
+}
+
+static void _register_c_type_methods(s7_scheme *s7, s7_int cstruct_t)
+{
+#ifdef DEBUG_TRACE
+    log_debug("_register_c_type_methods");
 #endif
     s7_c_type_set_gc_free(s7, cstruct_t, g_destroy_cstruct);
     s7_c_type_set_gc_mark(s7, cstruct_t, g_cstruct_gc_mark);
@@ -1033,12 +1022,13 @@ static void _register_extension_methods(s7_scheme *s7, s7_int cstruct_t)
     s7_c_type_set_is_equal(s7, cstruct_t, g_cstructs_are_equal);
     s7_c_type_set_is_equivalent(s7, cstruct_t, g_cstructs_are_equivalent);
 
-    /* s7_c_type_set_copy(s7, cstruct_t, g_cstruct_copy); */
+    s7_c_type_set_copy(s7, cstruct_t, g_cstruct_copy);
+    /* s7_c_type_set_length(s7, cstruct_t, g_cstruct_length); */
     /* s7_c_type_set_reverse(s7, cstruct_t, g_cstruct_reverse); */
     /* s7_c_type_set_fill(s7, cstruct_t, g_cstruct_fill); */
+
     s7_c_type_set_to_string(s7, cstruct_t, g_cstruct_to_string);
 
-    /* s7_c_type_set_length(s7, cstruct_t, g_cstruct_length); */
 }
 
 /* /section: extension methods */
@@ -1063,41 +1053,13 @@ static void _register_cstruct_fns(s7_scheme *s7)
     s7_define_typed_function(s7, "cstruct-ref", g_cstruct_ref_specialized, 2, 0, false, G_CSTRUCT_REF_SPECIALIZED_HELP, G_CSTRUCT_REF_SPECIALIZED_SIG);
     s7_define_typed_function(s7, "cstruct-set!", g_cstruct_set_specialized, 3, 0, false, G_CSTRUCT_SET_SPECIALIZED_HELP, G_CSTRUCT_SET_SPECIALIZED_SIG);
 
-    s7_define_typed_function(s7, "cstruct-method", g_cstruct_method, 1, 0, false, G_CSTRUCT_METHOD_HELP, G_CSTRUCT_METHOD_SIG);
-
     // cstruct-let => s7_c_object_let, a let for the instance not the type
     /* s7_define_safe_function(s7, "cstruct-let", g_cstruct_let, 1, 0, false, g_cstruct_let_help); */
 
     /* s7_define_safe_function(s7, "subcstruct", g_subcstruct, 1, 0, true, g_subcstruct_help); */
     /* s7_define_safe_function(s7, "cstruct-append", g_cstruct_append, 0, 0, true, g_cstruct_append_help); */
     /* s7_define_safe_function(s7, "cstruct-reverse!", g_cstruct_reverse_in_place, 1, 0, false, g_cstruct_reverse_in_place_help); */
-
-    g_cstruct_methods = s7_eval_c_string(s7, "(openlet (immutable! (inlet 'float-vector? (lambda (p) (display \"foo \") #t) \
-								       'signature (lambda (p) (list '#t 'cstruct? 'integer?)) \
-								       'type cstruct? \
-								       'foo (lambda (p) 999) \
-								       'arity (lambda (p) (cons 1 1)) \
-								       'aritable? (lambda (p args) (= args 1)) \
-								       'vector-dimensions (lambda (p) (list (length p))) \
-						                       'empty (lambda (p) (zero? (length p))) \
-								       'vector-ref cstruct-ref \
-								       'vector-set! cstruct-set!)))"
-                                         );
-						                       /* 'reverse! cstruct-reverse!)))" */
-                                                                       /* 'subsequence subcstruct \ */
-						                       /* 'append cstruct-append \ */
-
-    s7_gc_protect(s7, g_cstruct_methods);
 }
-
-/* static int _make_c_type(s7_scheme *s7) */
-/* { */
-/* #ifdef DEBUG_TRACE */
-/*     log_debug("_make_c_type"); */
-/* #endif */
-/*     cstruct_t = s7_make_c_type(s7, "<cstruct>"); */
-/*     return 0; */
-/* } */
 
 /* **************** */
 /** configure_s7_cstruct_type(s7_scheme *s7)
@@ -1112,7 +1074,7 @@ int configure_s7_cstruct_type(s7_scheme *s7)
 #endif
     /* s7_int t = _make_c_type(s7); */
     cstruct_t = s7_make_c_type(s7, "<cstruct>");
-    _register_extension_methods(s7, cstruct_t);
+    _register_c_type_methods(s7, cstruct_t);
     _register_get_and_set(s7);
     _register_cstruct_fns(s7);
     s7_provide(s7, "cstruct");
@@ -1124,7 +1086,7 @@ int configure_s7_cstruct_type(s7_scheme *s7)
 /* section: gc */
 static s7_pointer g_cstruct_gc_mark(s7_scheme *s7, s7_pointer p)
 {
-    /* nothing to mark because we protect g_cstruct_methods below, and all cstructs get the same let */
+    /* nothing to mark because we protect g_cstruct_methods_let, and all cstruct objects get the same let */
     return(p);
 }
 

@@ -30,9 +30,9 @@ struct cstruct_s {
     double *pd;
 
     /* complex numbers */
-    float complex fc;
-    double complex dc;
-    long double complex ldc;
+    /* float complex fc; */
+    /* double complex dc; */
+    /* long double complex ldc; */
 
     // imaginary not supported on macos c11
     /* float _Imaginary fi; */
@@ -43,36 +43,37 @@ struct cstruct_s {
 
     /* strings - TODO: unicode, w_char, etc */
     char   *str; /* owned (and freed) by libcstruct */
-    char  **strs[4];                /* list of 4 strings */
+    /* char  **strs[4];                /\* list of 4 strings *\/ */
 
     /* array types */
-    unsigned char ba[8];           /* byte array */
-    int ia[4];
-    int ia2[2][3];
+    /* unsigned char ba[8];           /\* byte array *\/ */
+    /* int ia[4]; */
+    /* int ia2[2][3]; */
 
     /* bitfields */
-    struct {
-        /* example from https://en.cppreference.com/w/c/language/bit_field */
-        /* will usually occupy 8 bytes: */
-        /* 5 bits: value of b1 */
-        /* 27 bits: unused */
-        /* 6 bits: value of b2 */
-        /* 15 bits: value of b3 */
-        /* 11 bits: unused */
-        unsigned b1 : 5;
-        unsigned :0; /* start a new unsigned int */
-        unsigned b2 : 6;
-        unsigned b3 : 15;
-    }  bitfield;
+    /* struct { */
+    /*     /\* example from https://en.cppreference.com/w/c/language/bit_field *\/ */
+    /*     /\* will usually occupy 8 bytes: *\/ */
+    /*     /\* 5 bits: value of b1 *\/ */
+    /*     /\* 27 bits: unused *\/ */
+    /*     /\* 6 bits: value of b2 *\/ */
+    /*     /\* 15 bits: value of b3 *\/ */
+    /*     /\* 11 bits: unused *\/ */
+    /*     unsigned b1 : 5; */
+    /*     unsigned :0; /\* start a new unsigned int *\/ */
+    /*     unsigned b2 : 6; */
+    /*     unsigned b3 : 15; */
+    /* }  bitfield; */
 
     /* TODO: function types */
-    myfun_t *fn;
+    /* myfun_t *fn; */
 
     /* atomic types: https://en.cppreference.com/w/c/language/atomic */
     /* https://en.cppreference.com/w/c/atomic */
-    atomic_bool atomb;          /* _Atomic _Bool */
-    atomic_char atomch;         /* _Atomic char */
-    atomic_int atomint;         /* _Atomic int */
+    /* atomic_bool atomb;          /\* _Atomic _Bool *\/ */
+    /* atomic_char atomch;         /\* _Atomic char *\/ */
+    /* atomic_int atomint;         /\* _Atomic int *\/ */
+
     //etc.
 };
 
