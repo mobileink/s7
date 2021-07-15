@@ -22,7 +22,7 @@
 
 void usage(void)
 {
-    printf("Usage: bazel run moonlark:edit -- [-f buildfile] [-l s7file]\n");
+    printf("Usage: bazel run demos:driver -- -d <demo>\n\n\tdemos: 1 (more to follow)\n");
 }
 
 int main(int argc, char *argv[]) // , char **envp)
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) // , char **envp)
     /* return 0; */
 
     int opt;
-    int testcase;
+    int demo;
 
     char *script_dir = "./demos";
 
@@ -45,16 +45,16 @@ int main(int argc, char *argv[]) // , char **envp)
     /* char *build_file = NULL; */
 
     if (argc < 2) {
-        printf("Usage: bazel run demos:driver -- -t <testcase>\n\n\ttestcases: 1,2\n");
+        usage();
         exit(EXIT_FAILURE);
     }
-    while ((opt = getopt(argc, argv, "t:hv")) != -1) {
+    while ((opt = getopt(argc, argv, "d:hv")) != -1) {
         switch (opt) {
-        case 't':
-            testcase = atoi(optarg);
+        case 'd':
+            demo = atoi(optarg);
             break;
         case 'h':
-            printf("Help: ");
+            usage();
             exit(EXIT_SUCCESS);
         case 'v':
             printf("verbose option (unimplemented) ");
@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) // , char **envp)
             exit(EXIT_FAILURE);
         }
     }
-    printf("testcase %d\n", testcase);
+    printf("demo %d\n", demo);
 
     s7_scheme *s7;
     s7 = s7_init();                 /* initialize the interpreter */
@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) // , char **envp)
     printf("load path: %s\n", s7_object_to_c_string(s7, loadpath));
 
     int rc = 0;
-    switch(testcase) {
+    switch(demo) {
     case 1:
         rc = run_load(s7);
         break;
@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) // , char **envp)
     /*     rc = run_cstruct(s7); */
     /*     break; */
     default:
-        printf("unknown testcase %d:\n", testcase);
+        printf("unknown demo %d:\n(sorry, for now we have only one: 1", demo);
         usage();
         return -1;
     }
