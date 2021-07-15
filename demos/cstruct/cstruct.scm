@@ -1,27 +1,102 @@
+(display "hello from ./demos/cstruct.scm")
+(newline)
 
-(display "hello from ./demos/cstruct.scm") (newline)
+(define (equality)
 
-(write "another message") (newline)
+  (define cs1 (make-cstruct))
+  (define sub1 (make-cstruct :str "substruct1"))
+  (set! (cs1 :substruct) sub1)
 
-(+ 2 3)
+  (define cs2 (make-cstruct))
+  (define sub2 (make-cstruct :str "substruct2"))
+  (set! (sub2 :c) #\y)
+  (set! (cs2 :substruct) sub2)
 
-;; handler will be called by app
-(define handler
-  (lambda (a b c)
-    (display (string-append
-              "running cstruct.scm handler; sum of args == "
-              (number->string (+ a b c))))
+  (display (format #f "eq? ~A" (eq? cs1 cs2))) (newline)
+  (display (format #f "eqv? ~A" (eqv? cs1 cs2))) (newline)
+  (display (format #f "equal? ~A" (equal? cs1 cs2))) (newline)
+  (display (format #f "equivalent? ~A" (equivalent? cs1 cs2))) (newline)
+
+  (display (object->string cs1 :readable)) (newline)
+  (display (object->string cs2)) (newline)
+  )
+
+(define (setters)
+    (define-constant cs1
+      ;; (make-cstruct :i 1)
+      (make-cstruct)
+      )
+    (define cs2
+      ;; (make-cstruct :i 2)
+      (make-cstruct)
+      )
+
+    (display "==== (cstruct-set! cs1 :pd 3.14) > set_specialized") (newline)
+    (cstruct-set! cs1 :pd 3.14) ;; calls set_specialized
+
+    ;; function setters must be added in Scheme
+    (set! (setter cstruct-ref) cstruct-set!)
+    ;; now we can use cstruct-ref in a set! context:
+    (display "==== (set! (cstruct-ref cs1 :str) \"bye\") > set_generic") (newline)
+    (set! (cstruct-ref cs1 :str) "bye") ;; calls setter of cstruct-ref
+
+    (display "==== (set! (cs1 :str) \"bye\") > set_generic") (newline)
+    (set! (cs1 :str) "bye") ;; calls set_generic, passing :str "bye"
+
+    (display "==== (cs1 :str) > ref_dispatcher (not ref_generic!)") (newline)
+    (cs1 :str) ;; calls set_generic, passing :str "bye"
+
+    (display "==== (ref cs1 :str) > generic ref, NOT SUPPORTED") (newline)
+    ;; (ref cs1 :pd) ;; calls ref_generic NOT SUPPORTED
+
+    (display "==== (cstruct-ref cs1 :str) > ref_specialized") (newline)
+    (cstruct-ref cs1 :pd) ;; calls ref_specialized
+
+    (display "================") (newline)
+    ;; in set! context, (cs1 :str) does NOT call any ref method, only set
+    (display (format #f "(set! (cs1 :str) \"bye\") -> ~A" cs1))
     (newline)
-    (define-constant x (make-cstruct :i 11 :pi 22 :c #\x :s "bye"))
-    (begin
-      ;; (display x) (newline)
-      ;; (write x) (newline)
-      (display (object->string x)) ;; :readable)
-      (newline)
-       ;; (output-port? (current-output-port)))
-      ;; (write "xxxxxxxxxxxxxxxx" (current-output-port))
-       ;; (current-output_port)
-      ;; (newline)
+
+    (let ((cref (cs1 :str))) ;; calls ref_dispatcher which calls ref_specialized
+      (display (format #f "(cs1 :str) -> ~A" cref))
+      (newline))
+
+    (let ((cref (cstruct-ref cs1 :pd))) ;; calls ref_specialized
+      (display (format #f "(cstruct-ref :pd) -> ~A" cref))
+      (newline))
+
+    (set! (cs1 :str) "bye") ;; calls set_generic, passing :str "bye"
+    ;; in set! context, (cs1 :str) does NOT call any ref method, only set
+    (cs1 :str) ;; calls dispatcher which calls ref_specialized
+
+    ;; (display (x :c)) (newline)
+    (let* (;;(y cs1)
+
+          ;; (v '#(a b c))
+          ;; (vsref (vector-ref v 1)) ;; specialized ref
+          ;; ;; (vgref (ref v)) ;; 1)) ;; generic ref - not predefined!
+          ;; (vmref (v 1)) ;; method ref
+
+           ;; (sref (cstruct-ref cs1 :i))
+           ;; (gref (ref cs1 :i))
+           ;; (sumints (cs1 :sumints))
+          )
+      (display (object->string cs1 :readable)) (newline)
+      ;; (display (format #f "sref: ~A" sref)) (newline)
+      ;; (display (format #f "sref: ~A" sref)) (newline)
+      ;; (display (format #f "gref: ~A" gref)) (newline)
+      ;; (display (format #f "sumints: ~A" sumints)) (newline)
+      ;; (display cs2) (newline)
+      ;; (display (format #f "(eq? cs1 cs2) ~A" (eq? cs1 cs2))) (newline)
+      ;; (display (format #f "(eqv? cs1 cs2) ~A" (eqv? cs1 cs2))) (newline)
+      ;; (display (format #f "(equal? cs1 cs2) ~A" (equal? cs1 cs2))) (newline)
+      ;; (display (format #f "(equivalent? cs1 cs2) ~A" (equivalent? cs1 cs2))) (newline)
+      ;; (provide 'foo)
+      ;; (require 'foobar)
+      ;; (display (provided? 'foo)) (newline)
+      ;; (display (format #f "set! result: ~A" x)) (newline)
+      ;; (display (format #f "(x :d): ~A" (x :d))) (newline)
+      ;; (display (format #f "(x :pd): ~A" (y :pd))) (newline)
       )
       ;; (display (c-object-let x))
       ;; (newline))
@@ -30,6 +105,31 @@
     ;; (if (cstruct? x)
     ;;     (begin (display "WOOT") (newline))
     ;;     (begin (display "SHUCKS") (newline)))
+    )
+
+;; handler will be called by app
+(define handler
+  (lambda (a)
+    (display "running cstruct.scm handler") (newline)
+
+    ;; (display (string-append
+    ;;           "running cstruct.scm handler; sum of args == "
+    ;;           (number->string (+ a b c))))
+    ;; (newline)
+
+    ;; (setters)
+
+    (equality)
+
+    ;; (set! (a :str) "bye")
+
+    ;; ((setter a) a :d 97)
+
+    ;; (display (format #f "setter: ~A"
+    ;;                  (object->string (setter a)))) (newline)
+
+    ;; (display (object->string a :readable)) (newline)
+
     99))
 
 ;; last value of file will be the result of s7_load()

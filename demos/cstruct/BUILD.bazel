@@ -53,6 +53,8 @@ cc_library(
     # data = ["cstruct.scm"],
     copts = [
         "-std=c11",
+        "-pedantic-errors",
+        # "-Werror=int-conversion",
         "-Idemos/logc",
         "-Is7"
     ],

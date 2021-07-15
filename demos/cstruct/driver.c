@@ -43,5 +43,6 @@ int main(int argc, char *argv[]) // , char **envp)
     rc = run_cstruct(s7);
     log_debug("return code: %d", rc);
     s7_quit(s7);
+
     return rc;
 }
