@@ -215,10 +215,7 @@ static s7_pointer g_cstructs_are_equivalent(s7_scheme *s7, s7_pointer args)
     log_debug("g_cstructs_are_equivalent");
 #endif
 
-    s7_pointer v1, v2, arg1, arg2;
-    bool result;
-    uint32_t gc1, gc2;
-    size_t len;
+    s7_pointer arg1, arg2;
 
     arg1 = s7_car(args);
     arg2 = s7_cadr(args);
@@ -807,6 +804,12 @@ static s7_pointer g_cstruct_to_string(s7_scheme *s7, s7_pointer args)
 /* **************************************************************** */
 /* section: c-object construction */
 
+/** g_cstruct_copy
+
+    registered as type method using s7_c_type_set_copy
+
+
+ */
 static s7_pointer g_cstruct_copy(s7_scheme *s7, s7_pointer args)
 {
 #ifdef DEBUG_TRACE
