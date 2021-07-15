@@ -475,16 +475,19 @@ static s7_pointer g_block_copy(s7_scheme *sc, s7_pointer args)
           s7_pointer v;
 	  v = s7_make_float_vector_wrapper(sc, len, g->data, 1, NULL, false);
 	  s7_gc_protect_via_stack(sc, v);
+          /* assume arg2 is a vector and cp arg1 content to it? */
+          /* implies this is really update!, not copy */
           new_g = s7_copy(sc, s7_cons(sc, v, s7_cdr(args)));
 	  s7_gc_unprotect_via_stack(sc, v);
           return(new_g);
         }
-      if (s7_is_pair(s7_cddr(args)))
+      if (s7_is_pair(s7_cddr(args))); /* optional 3rd arg 'start-cp-from' */
         len = get_start_and_end(sc, s7_cdr(args), &start, len);
     }
   else new_g = g_make_block(sc, s7_cons(sc, s7_make_integer(sc, len), s7_nil(sc)));
   g1 = (g_block *)s7_c_object_value(new_g);
   if (g1->size < len) len = g1->size;
+  /* g is arg1 */
   memcpy((void *)(g1->data), (void *)(g->data + start), len * sizeof(double));
   return(new_g);
 }
