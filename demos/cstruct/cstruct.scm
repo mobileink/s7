@@ -70,17 +70,44 @@
 
 (define (copy-test)
 
-  (define cs1 (make-cstruct))
-  ;; (define sub1 (make-cstruct :str "substruct1"))
-  ;; (set! (cs1 :substruct) sub1)
+  (display "DEFAULT COPY") (newline)
+  (define a 1)
+  (define b 2)
+  ;; (copy a b) ;copy argument 2, 2, is an integer but should be a mutable object
+  ;; but:
+  ;; (set! b 3) ; ok
 
-  (define cs2 (copy cs1))
+  (define al #(1 2 3 4))
+  (define bl #(7 8 9))
+  (copy al bl)
 
-  ;; (display (object->string cs1 :readable)) (newline)
+  (let ((c (copy b)))
+    (display (format #f "a ~A, b ~A, c ~A" a b c)) (newline)
+    (display (format #f "bl ~A" bl)) (newline)
+    (display (format #f "(eq? b c): ~A" (eq? b c))) (newline) ; #f
+    (display (format #f "(eqv? b c): ~A" (eqv? b c))) (newline) ; #t
+    (display (format #f "(equal? b c): ~A" (equal? b c))) (newline) ; #t
+    )
+
+  (display "==== COPY cstruct ====") (newline)
+  (define cs1 (make-cstruct :str "obj a"))
+  (define cs2 (make-cstruct :c #\b :str "obj b"))
+
+  ;; (display "COPY one") (newline)
+  ;; (define cs3 (copy cs1))
+
+  (display "COPY cs1 cs2") (newline)
+  (copy cs1 cs2)
+  ;; (define cs3 (copy cs1 cs2))
+
+  ;; (display "COPY cs1 al") (newline)
+  ;; (define cs3 (copy cs1 al))
+  ;; (display (object->string al)) (newline)
+
+  (display "COPY RESULTS") (newline)
+  (display (object->string cs1)) (newline)
   (display (object->string cs2)) (newline)
-
-  (display (#(a b c) 1)) (newline)
-
+  ;; (display (object->string cs3)) (newline)
   )
 
 (define (equality)
@@ -201,8 +228,8 @@
 
     ;; (setters)
     ;; (equality)
-    ;; (copy-test)
-    (applicator-test)
+    (copy-test)
+    ;; (applicator-test)
     ;; (method-test)
 
     ;; (set! (a :str) "bye")
@@ -217,4 +244,5 @@
     99))
 
 ;; last value of file will be the result of s7_load()
+(display "load result should be: 7") (newline)
 (/ 35 5)

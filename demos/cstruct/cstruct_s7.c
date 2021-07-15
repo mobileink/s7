@@ -806,24 +806,84 @@ static s7_pointer g_cstruct_to_string(s7_scheme *s7, s7_pointer args)
 
 /** g_cstruct_copy
 
-    registered as type method using s7_c_type_set_copy
+    registered as c-type method using s7_c_type_set_copy
 
+    this extends the predefined (copy ...) proc. to handle our custom
+    c-type.
+
+    in s7, 'copy' is generic, but it seems to be limited to sequences;
+    maybe copy-seq would be better. OTOH it does work with e.g. a
+    single int, as in (let* ((a 1) (b (copy a))) ...). But the two-arg
+    version (copy a b) only works with sequences?
+
+    But it's also not strictly copy; it may copy only part of the
+    source, for example. And it's destructive. A better name might be
+    update! or similar. (idiomatic english: "copy a to b" means "make
+    b distinct from but identical to a".)
+
+    if arg1 has cstruct type
+        if cdr(args) is pair
+            arg2 = cadr(args)
+            check for mutability
+            if arg2.type is cstruct_t
+                ok to copy
+                if optional 3rd arg ('start-cp-from' index)
+                    ...
+                else
+                    copy arg1 data to arg1
+            else ;; arg2.type is NOT cstruct_t
+                g_block_copy assumes arg2 is a vector and copies data to it?
+        else ;; only one arg, copy it
+            make a new cstruct
+            copy arg1 data to new cstruct
+            return new cstruct
+    else ;;  arg1 not cstruct, so arg2 must be
 
  */
 static s7_pointer g_cstruct_copy(s7_scheme *s7, s7_pointer args)
 {
 #ifdef DEBUG_TRACE
     log_debug("g_cstruct_copy");
+    debug_print_s7(s7, "COPY ARGS: ", args);
+    /* debug_print_s7(s7, "COPY ARGS len: ", s7_list_length(s7, args)); */
 #endif
 
-    s7_pointer obj;
-    /* struct cstruct_s *g; //, *g1; */
-    /* size_t len; */
-    /* s7_int start = 0; */
-    obj = s7_car(args);
-    return obj;//FIXME
+    s7_pointer arg1, arg2;
+    struct cstruct_s *cs1, *cs2;
 
-    /* return(new_g); */
+    arg1 = s7_car(args);
+    if (s7_c_object_type(arg1) == cstruct_t) {
+        log_debug("copy cstruct");
+        cs1 = (struct cstruct_s*)s7_c_object_value(arg1);
+        if (s7_is_pair(s7_cdr(args))) {
+            log_debug("copy a b");
+            arg2 = s7_cadr(args);
+            if (s7_is_immutable(arg2))
+                return(s7_wrong_type_arg_error(s7, "cstruct-copy!",
+                                               0, arg2, "a mutable cstruct"));
+            if (s7_c_object_type(arg2) == cstruct_t) {
+                log_debug("copy cstruct to cstruct");
+                cs2 = (struct cstruct_s*)s7_c_object_value(arg2);
+                cstruct_copy(cs1, cs2);
+                return arg2;
+            } else {
+                return(s7_wrong_type_arg_error(s7, "cstruct-copy!",
+                                               0, arg2, "a mutable cstruct"));
+            }
+        } else {
+            log_debug("copy one");
+            /* only one arg, copy it to new cstruct */
+            struct cstruct_s *cs2 = (struct cstruct_s *)
+                calloc(1, sizeof(struct cstruct_s));
+            cs2 = cstruct_init_default(cs2);
+            cstruct_copy(cs1, cs2);
+            return s7_make_c_object(s7, cstruct_t,
+                                    (void *)cs2);
+        }
+    } else {
+        log_debug("copy non-cs");
+        /* arg1 type != cstruct_t */
+    }
 }
 
 /*
@@ -944,6 +1004,7 @@ static s7_pointer g_new_cstruct(s7_scheme *s7, s7_pointer args)
 
     struct cstruct_s *new_cstruct = (struct cstruct_s *)
         calloc(1, sizeof(struct cstruct_s));
+    new_cstruct = cstruct_init_default(new_cstruct);
     if (g_cstruct_init_from_s7(s7, new_cstruct, args) != NULL) {
         log_debug("OOPS");
     }
@@ -1111,9 +1172,11 @@ void debug_print_s7(s7_scheme *s7, char *label, s7_pointer obj)
 {
     log_debug("debug_print_s7: ");
     s7_pointer p = s7_current_output_port(s7);
-    s7_display(s7, s7_make_string(s7, label), p);
-    s7_display(s7, obj, p);
-    s7_newline(s7, p);
+    /* s7_display(s7, s7_make_string(s7, label), p); */
+    log_debug("label: %s", label);
+    log_debug("%s", s7_object_to_c_string(s7, obj));
+    /* s7_display(s7, obj, p); */
+    /* s7_newline(s7, p); */
 }
 
 /* /section: debugging */

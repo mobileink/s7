@@ -79,4 +79,8 @@ struct cstruct_s {
 
 int run_cstruct(s7_scheme *s7);
 
+struct cstruct_s *cstruct_init_default(struct cstruct_s *cs);
+struct cstruct_s *cstruct_copy(struct cstruct_s *src,
+                               struct cstruct_s *dest);
+
 void cstruct_free(struct cstruct_s *cs);

@@ -92,6 +92,78 @@ struct cstruct_s *cstruct_init(struct cstruct_s *cs,
     return cs;
 }
 
+struct cstruct_s *cstruct_init_default(struct cstruct_s *cs)
+{
+    log_debug("cstruct_init_default");
+    cs->c = 'a';
+    cs->bits = 0xFF;
+
+    cs->str = calloc(1, 6);
+    strncpy(cs->str, "hello", 6);
+
+    cs->b = false;
+    cs->pb = calloc(1, sizeof(unsigned char));
+    *cs->pb = false;
+
+    cs->sh_rt = 7;
+    cs->psh_rt = calloc(1, sizeof(short));
+    *cs->psh_rt = 8;
+
+    cs->i = 1;
+    cs->pi = calloc(1, sizeof(int));
+    *cs->pi = 2;
+
+    cs->l = 3;
+    cs->pl = calloc(1, sizeof(long));
+    *cs->pl = 4;
+
+    cs->ll = 3333;
+    cs->pll = calloc(1, sizeof(long long));
+    *cs->pll = 4444;
+
+    cs->f = 5.0;
+    cs->pf = calloc(1, sizeof(float));
+    *cs->pf = 6.0;
+
+    cs->d = 7;
+    cs->pd = calloc(1, sizeof(double));
+    *cs->pd = 8;
+
+    return cs;
+}
+
+struct cstruct_s *cstruct_copy(struct cstruct_s *src,
+                               struct cstruct_s *dest)
+{
+    dest->c = src->c;
+    dest->bits = src->bits;
+
+    free(dest->str);
+    int len = strlen(src->str);
+    dest->str = calloc(1, len);
+    strncpy(dest->str, src->str, len);
+
+    dest->sh_rt = src->sh_rt;
+    *dest->psh_rt = *src->psh_rt;
+
+    dest->i = src->i;
+    *dest->pi = *src->pi;
+
+    dest->l = src->l;
+    *dest->pl = *src->pl;
+
+    dest->ll = src->ll;
+    *dest->pll = *src->pll;
+
+    dest->f = src->f;
+    *dest->pf = *src->pf;
+
+    dest->d = src->d;
+    *dest->pd = *src->pd;
+
+    return dest;
+}
+
 void cstruct_free(struct cstruct_s *cs)
 {
     log_debug("cstruct_free");
