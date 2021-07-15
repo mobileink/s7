@@ -30,6 +30,10 @@ frees the s7 interpreter
 .Fn s7_gc_protect_via_location(s7_scheme *sc, s7_pointer x, s7_int loc);
 .Ft s7_pointer
 .Fn s7_gc_unprotect_via_location(s7_scheme *sc, s7_int loc);
+
+.Ft void
+.Fn s7_c_type_set_gc_free "s7_scheme *sc, s7_int tag, s7_pointer (*gc_free)   (s7_scheme *sc, s7_pointer obj)"
+free c_object function
 .Sh DESCRIPTION
 Any s7_pointer object held in C (as a local variable for example) needs to be protected from garbage collection if there is any chance the GC may run without an existing Scheme-level reference to that object.  s7_gc_protect places the object in a vector that the GC always checks, returning the object's location in that table.  s7_gc_unprotect_at unprotects the object (removes it from the vector) using the location passed to it.  s7_gc_protected_at returns the object at the given location.
 .Pp

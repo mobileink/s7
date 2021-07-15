@@ -2,7 +2,7 @@
 .Dt S7 3
 .Sh NAME
 .Nm S7
-.Nd Equality interface
+.Nd Core C Equality interface
 .Sh LIBRARY
 libs7, -ls7
 .Sh SYNOPSIS
@@ -19,21 +19,16 @@ libs7, -ls7
 .Ft bool
 .Fn  s7_is_equivalent "s7_scheme *sc, s7_pointer x, s7_pointer y"
 (equivalent? x y)
+.Pp
 .Sh DESCRIPTION
 .Sh EXAMPLES
 .Bd -literal -offset indent
 .Ed
 .Pp
 .Sh SEE ALSO
-.Xr s7_datatypes 3
-.Pp
-.Xr s7_booleans 3 ,
-.Xr s7_characters 3 ,
-.Xr s7_lists 3 ,
-.Xr s7_numbers 3 ,
-.Xr s7_pairs 3 ,
-.Xr s7_strings 3 ,
-.Xr s7_vectors 3 ,
+.Xr s7_equality 7 ,
+.Xr s7_ffi_equality 3 ,
+.Xr s7_scm_equality 3 ,
 .Sh AUTHORS
 .An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
 .An Mike Scholz

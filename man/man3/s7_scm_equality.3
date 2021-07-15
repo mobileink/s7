@@ -1,32 +1,30 @@
 .Dd July 10, 2021
 .Dt S7 3
 .Sh NAME
-.Nm S7
-.Nd Scheme
-.Sh DESCRIPTION
-This manual documents the s7 Scheme dialect.
-.Pp
-Individual manpages are prefixed with
-.Em s7_scm_ .
-Entries in the SYNOPSIS section of the manpages have the following form:
-.Pp
-<syntax>
- <authority>: <category>
-.Pp
-For example:
-.Pp
-.Em (equal? obj1 obj2)
+.Nm S7 Scheme
+.Nd Equality
+.Sh SYNOPSIS
+.Em (eq? a b)
  R7RS: procedure
 .Pp
-.Em (equivalent? obj1 obj2)
+.Em (eqv? a b)
+ R7RS: procedure
+.Pp
+.Em (equal? a b)
+ R7RS: procedure
+.Pp
+.Em (equivalent? a b)
  s7: procedure
 .Pp
+.Sh DESCRIPTION
+.Sh EXAMPLES
+.Bd -literal -offset indent
+.Ed
+.Pp
 .Sh SEE ALSO
-.Xr s7_scm_equality 3 ,
-.Xr s7 7 ,
-.Xr s7_c 7 ,
-.Xr s7_ffi 7 ,
-etc.
+.Xr s7_equality 7 ,
+.Xr s7_c_equality 3 ,
+.Xr s7_ffi_equality 3 ,
 .Sh AUTHORS
 .An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
 .An Mike Scholz
