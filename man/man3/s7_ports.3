@@ -6,10 +6,86 @@
 .Sh LIBRARY
 libs7, -ls7
 .Sh SYNOPSIS
-
+File (network?) ports:
+.Pp
+.Em (input-port? p)
+.Pp
+.Em (output-port? p)
+.Pp
+.Em (port-filename p)
+.Pp
+.Em (port-line-number p)
+.Pp
+(current-input-port)
+(set-current-input-port)
+(current-output-port)
+(set-current-output-port)
+(current-error-port)
+(set-current-error-port port)
+(close-input-port p)
+(close-output-port p)
+(open-input-file name mode)
+.Pp
+String ports:
+.Pp
+.Em (with-output-to-string thunk)
+; open a string port as current-output-port, call thunk, return string
+.Pp
+.Em (with-input-from-string string thunk)
+; open string as current-input-port, call thunk
+.Pp
+.Em (call-with-output-string proc)
+; open a string port, apply proc to it, return string
+.Pp
+.Em (call-with-input-string string proc)
+; open string as current-input-port, apply proc to it
+.Pp
+.Em (open-output-string)
+; open a string output port
+.Pp
+.Em (get-output-string port clear)
+; return output accumulated in the string output port
+.Pp
+.Em (open-input-string string)
+; open a string input port reading string
+.Pp
+Function ports:
+.Pp
+.Em (open-input-function function)
+; open an input function-port
+.Pp
+.Em (open-output-function function)
+; open an output function-port
 .Sh DESCRIPTION
+Besides files, ports can also represent strings and functions.
+.Pp
+Function ports call a function rather than reading or writing the data to a string or file. See nrepl.scm and s7test.scm for examples. The
+.Em function-port
+function is accessible as
+.Em ((object->let function-port) 'function) .
+These ports are even more esoteric than their C-side cousins.
+.Pp
 .Sh EXAMPLES
+String port:
 .Bd -literal -offset indent
+> (let ((result #f)
+        (p (open-output-string)))
+    (format p "this ~A ~C test ~D" "is" #\a 3)
+    (set! result (get-output-string p))
+    (close-output-port p)
+    result)
+"this is a test 3"
+.Ed
+.Pp
+ An example that traps current-ouput-port output:
+.Bd -literal -offset indent
+(let* ((str ())
+       (stdout-wrapper (open-output-function
+			 (lambda (c)
+			   (set! str (cons c str))))))
+  (let-temporarily (((current-output-port) stdout-wrapper))
+    (write-char #\a)
+    ...))
 .Ed
 .Pp
 .Sh SEE ALSO
