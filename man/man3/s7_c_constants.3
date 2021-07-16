@@ -2,17 +2,17 @@
 .Dt S7 3
 .Sh NAME
 .Nm S7
-.Nd Definitions
+.Nd Constants (C API)
 .Sh LIBRARY
 libs7, -ls7
 .Sh SYNOPSIS
 .In s7.h
-.Ft typedef s7_pointer
-.Fn (*s7_function) "s7_scheme *sc, s7_pointer args"
-.Ft void
-.Fn s7_define "s7_scheme *sc, s7_pointer env, s7_pointer symbol, s7_pointer value"
-.Ft bool
-.Fn s7_is_defined "s7_scheme *sc, const char *name"
+.Ft s7_pointer
+.Fn s7_define_constant "s7_scheme *sc, const char *name, s7_pointer value"
+.Ft s7_pointer
+.Fn s7_define_constant_with_documentation "s7_scheme *sc, const char *name, s7_pointer value, const char *help"
+.Ft s7_pointer
+.Fn s7_define_constant_with_environment "s7_scheme *sc, s7_pointer env, const char *name, s7_pointer value"
 .Sh DESCRIPTION
 The
 .Em s7_define*
@@ -161,9 +161,6 @@ verbatim code here...
 .Ed
 .Pp
 .Sh SEE ALSO
-.Xr s7_define_constant 3 ,
-.Xr s7_define_constant_with_documentation 3 ,
-.Xr s7_define_constant_with_environment 3 ,
 .Xr s7_define_variable 3 ,
 .Xr s7_define_variable_with_documentation 3 ,
 .Xr s7_define_constant 3 ,
@@ -188,10 +185,8 @@ verbatim code here...
 .Xr s7_dilambda 3 ,
 .Xr s7_typed_dilambda 3 ,
 .Xr s7_dilambda_with_environment 3 ,
+.Xr s7_c_objects 3 ,
 .Pp
-.Xr SRFI 89 Optional positional and named parameters https://srfi.schemers.org/srfi-89/srfi-89.html
-.Pp
-.Xr Guile manual 6.7.4.1 lambda* and define*
 .Sh AUTHORS
 .An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
 .An Mike Scholz

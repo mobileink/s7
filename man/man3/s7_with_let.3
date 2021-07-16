@@ -7,33 +7,6 @@
 libs7, -ls7
 .Sh SYNOPSIS
 .In s7.h
-.Ft s7_pointer
-.Fn s7_eval_c_string_with_environment "s7_scheme *sc, const char *str, s7_pointer e"
-.Ft s7_pointer
-.Fn s7_load_with_environment "s7_scheme *sc, const char *filename, s7_pointer e"
-.Ft s7_pointer
-.Fn s7_load_c_string_with_environment "s7_scheme *sc, const char *content, s7_int bytes, s7_pointer e"
-.Ft s7_pointer
-.Fn s7_define_constant_with_environment "s7_scheme *sc, s7_pointer envir, const char *name, s7_pointer value"
-.Ft s7_pointer
-.Fo s7_dilambda_with_environment
-.Fa "s7_scheme *sc"
-.Fa "s7_pointer envir"
-.Fa "const char *name"
-.Fa "s7_pointer (*getter)(s7_scheme *sc, s7_pointer args)"
-.Fa "s7_int get_req_args"
-.Fa "s7_int get_opt_args"
-.Fa "s7_pointer (*setter)(s7_scheme *sc, s7_pointer args)"
-.Fa "s7_int set_req_args"
-.Fa "s7_int set_opt_args"
-.Fa "const char *documentation"
-.Fc
-.Ft s7_pointer
-.Fn s7_make_c_object_with_let "s7_scheme *sc, s7_int type, void *value, s7_pointer let"
-.Ft s7_pointer
-.Fn s7_inlet "s7_scheme *sc, s7_pointer bindings"
-.Ft s7_pointer
-.Fn s7_outlet "s7_scheme *sc, s7_pointer e"
 .Sh DESCRIPTION
 .Pp
 .Fn s7_eval_c_string_with_environment

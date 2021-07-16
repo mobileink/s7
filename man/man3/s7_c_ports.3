@@ -1,0 +1,107 @@
+.Dd July 12, 2021
+.Dt S7 3
+.Sh NAME
+.Nm S7
+.Nd Input-Output
+.Sh LIBRARY
+libs7, -ls7
+.Sh SYNOPSIS
+.In s7.h
+.Ft bool
+.Fn s7_is_input_port(s7_scheme *sc, s7_pointer p);
+(input-port? p)
+.Ft bool
+.Fn s7_is_output_port(s7_scheme *sc, s7_pointer p);
+(output-port? p)
+.Ft const char*
+.Fn s7_port_filename(s7_scheme *sc, s7_pointer x);
+(port-filename p)
+.Ft s7_int
+.Fn s7_port_line_number(s7_scheme *sc, s7_pointer p);
+(port-line-number p)
+.Ft s7_pointer
+.Fn s7_current_input_port(s7_scheme *sc);
+(current-input-port)
+.Ft s7_pointer
+.Fn s7_set_current_input_port(s7_scheme *sc, s7_pointer p);
+(set-current-input-port)
+.Ft s7_pointer
+.Fn s7_current_output_port(s7_scheme *sc);
+(current-output-port)
+.Ft s7_pointer
+.Fn s7_set_current_output_port(s7_scheme *sc, s7_pointer p);
+(set-current-output-port)
+.Ft s7_pointer
+.Fn s7_current_error_port(s7_scheme *sc);
+(current-error-port)
+.Ft s7_pointer
+.Fn s7_set_current_error_port(s7_scheme *sc, s7_pointer port);
+(set-current-error-port port)
+.Ft void
+.Fn s7_close_input_port(s7_scheme *sc, s7_pointer p);
+(close-input-port p)
+.Ft void
+.Fn s7_close_output_port(s7_scheme *sc, s7_pointer p);
+(close-output-port p)
+.Ft void
+.Fn s7_flush_output_port(s7_scheme *sc, s7_pointer p);
+(flush-output-port port)
+.Sh DESCRIPTION
+Most of these IO functions correspond closely to the similarly named scheme functions.
+.Fn s7_port_filename
+returns the file associated with a file port.
+.Pp
+.Fn s7_port_line_number
+returns position of the reader in an input file port.
+.Pp
+The
+.Em use_write
+parameter to
+.Fn s7_object_to_string
+refers to the write/display choice in scheme.
+.Pp
+The string returned by
+.Fn s7_object_to_c_string
+should be freed by the caller.
+.Pp
+.Fn s7_open_input_function
+and
+.Fn s7_open_output_function
+call their
+.Em function
+argument when input or output is requested. The
+.Em read_choice
+argument specifies to that function which of the input scheme functions called it. The intent of these two input functions is to give you complete control over IO. In the case of an input_function:
+.Bd -literal -offset indent
+static s7_pointer my_read(s7_scheme *sc, s7_read_t peek, s7_pointer port)
+{
+  /* this function should handle input according to the peek choice */
+  return(s7_make_character(sc, '0'));
+}
+
+s7_pointer port;
+s7_int gc_loc;
+uint8_t c;
+port = s7_open_input_function(sc, my_read);
+gc_loc = s7_gc_protect(sc, port);
+c = s7_character(s7_read_char(sc, p1)); /* my_read "peek" == S7_READ_CHAR */
+if (last_c != '0')
+   fprintf(stderr, "c: %c\n", c);
+s7_gc_unprotect_at(sc, gc_loc);
+.Ed
+.Sh EXAMPLES
+.Bd -literal -offset indent
+.Ed
+.Pp
+.Sh SEE ALSO
+.Xr s7_c_io 3
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support

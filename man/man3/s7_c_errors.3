@@ -16,10 +16,6 @@ set arg_n to 0 to indicate that caller takes only one argument (so the argument 
 .Fn s7_out_of_range_error "s7_scheme *sc, const char *caller, s7_int arg_n, s7_pointer arg, const char *descr"
 .Ft s7_pointer
 .Fn s7_wrong_number_of_args_error "s7_scheme *sc, const char *caller, s7_pointer args"
-.Ft s7_pointer
-.Fn s7_current_error_port "s7_scheme *sc"
-.Ft s7_pointer
-.Fn s7_set_current_error_port "s7_scheme *sc, s7_pointer port"
 .Sh DESCRIPTION
 These are equivalent to
 .Em (error ...)
@@ -59,6 +55,8 @@ verbatim code here...
 .Ed
 .Pp
 .Sh SEE ALSO
+.Xr s7_current_error_port 3 ,
+.Xr s7_set_current_error_port 3 ,
 .Xr s7_c_objects 3 ,
 .Sh AUTHORS
 .An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu

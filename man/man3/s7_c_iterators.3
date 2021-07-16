@@ -1,35 +1,27 @@
-.Dd July 12, 2021
+.Dd July 10, 2021
 .Dt S7 3
 .Sh NAME
 .Nm S7
-.Nd Ports (Scheme API)
-.Sh LIBRARY
-libs7, -ls7
+.Nd Iterators (C API)
 .Sh SYNOPSIS
-
+.In s7.h
+.Ft s7_pointer
+.Fn s7_make_iterator "s7_scheme *sc, s7_pointer e"
+.Ft bool
+.Fn s7_is_iterator "s7_pointer obj"
+.Ft bool
+.Fn s7_iterator_is_at_end "s7_scheme *sc, s7_pointer iter"
+.Ft s7_pointer
+.Fn s7_iterate "s7_scheme *sc, s7_pointer iter"
 .Sh DESCRIPTION
+These are the C equivalents of make-iterator, iterator?, iterator-at-end?, and iterate.
+.Pp
 .Sh EXAMPLES
 .Bd -literal -offset indent
 .Ed
 .Pp
 .Sh SEE ALSO
-.Xr s7_datatypes 3 ,
-.Xr s7_equality 3
-.Pp
-.Xr s7_booleans 3 ,
-.Xr s7_characters 3 ,
-.Xr s7_lists 3 ,
-.Xr s7_numbers 3 ,
-.Xr s7_pairs 3 ,
-.Xr s7_strings 3 ,
-.Xr s7_vectors 3 ,
-.Pp
-.Xr s7_booleans 3 ,
-.Xr s7_characters 3 ,
-.Xr s7_lists 3 ,
-.Xr s7_numbers 3 ,
-.Xr s7_pairs 3 ,
-.Xr s7_strings 3
+.Xr s7_iterators 3
 .Sh AUTHORS
 .An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
 .An Mike Scholz

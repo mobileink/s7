@@ -7,6 +7,9 @@
 .Lb libs7
 .Sh SYNOPSIS
 .In s7.h
+.Vt s7_int
+.Vt s7_pointer
+.Pp
 .Ft s7_int
 .Fn s7_c_object_type "s7_pointer obj"
 .Ft s7_int
@@ -238,6 +241,7 @@ is set to indicate the error.
 
 .Sh ERRORS
 .Sh SEE ALSO
+.Xr s7_c_object_type 3 ,
 .Xr s7_c_pointers 3
 .Pp
 .Em SRFI 17 Generalized set!

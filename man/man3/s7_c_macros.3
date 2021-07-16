@@ -2,11 +2,14 @@
 .Dt S7 3
 .Sh NAME
 .Nm S7
-.Nd Define and Lambda interface
+.Nd Macros
 .Sh LIBRARY
 libs7, -ls7
 .Sh SYNOPSIS
 .In s7.h
+.Ft bool
+.Fn s7_is_macro "s7_scheme *sc, s7_pointer x"
+(macro? x)
 .Ft s7_pointer
 .Fn s7_define_macro "s7_scheme *sc, const char *name, s7_function fnc, s7_int required_args, s7_int optional_args, bool rest_arg, const char *doc"
 .Sh DESCRIPTION

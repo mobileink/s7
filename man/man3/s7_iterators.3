@@ -2,25 +2,51 @@
 .Dt S7 3
 .Sh NAME
 .Nm S7
-.Nd Iterators
-.Sh DESCRIPTION
-See
-.Pa https://ccrma.stanford.edu/software/snd/snd/s7.html#generalizedset
+.Nd Iterators (Scheme API)
+.Sh SYNOPSIS
+.Em (make-iterator sequence)
+.Em (iterator? obj)
+.Em (iterate iterator)
+.Em (iterator-sequence iterator)
+.Em (iterator-at-end? iterator)
 .Pp
-"Underlying some of these [sequence] functions are generic iterators, also built-into s7:
+.Sh DESCRIPTION
+make-iterator takes a sequence argument and returns an iterator object that traverses that sequence as it is called. The iterator itself can be treated as a function of no arguments, or (for code clarity) it can be the argument to iterate, which does the same thing. That is (iter) is the same as (iterate iter). The sequence that an iterator is traversing is iterator-sequence.
+
+If the sequence is a hash-table or let, the iterator normally returns a cons of the key and value. There are many cases where this overhead is objectionable, so make-iterator takes a third optional argument, the cons to use (changing its car and cdr directly on each call).
+
+When an iterator reaches the end of its sequence, it returns #<eof>. It used to return nil; I can't decide whether this change is an improvement. If an iterator over a list notices that its list is circular, it returns #<eof>. map and for-each use iterators, so if you pass a circular list to either, it will stop eventually. (An arcane consequence for method writers: specialize make-iterator, not map or for-each).
+.Pp
 .Bd -literal -offset indent
-(make-iterator sequence)
-(iterator? obj)
-(iterate iterator)
-(iterator-sequence iterator)
-(iterator-at-end? iterator)
+(define (find-if f sequence)
+  (let ((iter (make-iterator sequence)))
+    (do ((x (iter) (iter)))
+	((or (eof-object? x) (f x))
+	 (and (not (eof-object? x)) x)))))
 .Ed
+But of course a sequence might contain #<eof>! So to be really safe, use iterator-at-end? instead of eof-object?.
+
+The argument to make-iterator can also be a function or macro. There should be a variable named '+iterator+ with a non-#f value in the closure's environment:
+.Pp
+.Bd -literal -offset indent
+(define (make-circular-iterator obj)
+  (let ((iter (make-iterator obj)))
+    (make-iterator
+     (let ((+iterator+ #t))
+       (lambda ()
+         (case (iter)
+           ((#<eof>) ((set! iter (make-iterator obj))))
+           (else)))))))
+.Ed
+.Pp
+The 'iterator? variable is similar to the '+documentation+ variable used by documentation. It gives make-iterator some hope of catching inadvertent bogus function arguments that would otherwise cause an infinite loop.
+.Pp
 .Sh EXAMPLES
 .Bd -literal -offset indent
 .Ed
 .Pp
 .Sh SEE ALSO
-.Xr s7_sequences 3
+.Xr s7_c_iterators 3
 .Sh AUTHORS
 .An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
 .An Mike Scholz

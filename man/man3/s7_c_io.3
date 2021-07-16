@@ -7,42 +7,6 @@
 libs7, -ls7
 .Sh SYNOPSIS
 .In s7.h
-.Ft bool
-.Fn s7_is_input_port(s7_scheme *sc, s7_pointer p);
-(input-port? p)
-.Ft bool
-.Fn s7_is_output_port(s7_scheme *sc, s7_pointer p);
-(output-port? p)
-.Ft const char*
-.Fn s7_port_filename(s7_scheme *sc, s7_pointer x);
-(port-filename p)
-.Ft s7_int
-.Fn s7_port_line_number(s7_scheme *sc, s7_pointer p);
-(port-line-number p)
-.Ft s7_pointer
-.Fn s7_current_input_port(s7_scheme *sc);
-(current-input-port)
-.Ft s7_pointer
-.Fn s7_set_current_input_port(s7_scheme *sc, s7_pointer p);
-(set-current-input-port)
-.Ft s7_pointer
-.Fn s7_current_output_port(s7_scheme *sc);
-(current-output-port)
-.Ft s7_pointer
-.Fn s7_set_current_output_port(s7_scheme *sc, s7_pointer p);
-(set-current-output-port)
-.Ft s7_pointer
-.Fn s7_current_error_port(s7_scheme *sc);
-(current-error-port)
-.Ft s7_pointer
-.Fn s7_set_current_error_port(s7_scheme *sc, s7_pointer port);
-(set-current-error-port port)
-.Ft void
-.Fn s7_close_input_port(s7_scheme *sc, s7_pointer p);
-(close-input-port p)
-.Ft void
-.Fn s7_close_output_port(s7_scheme *sc, s7_pointer p);
-(close-output-port p)
 .Ft s7_pointer
 .Fn s7_open_input_file(s7_scheme *sc, const char *name, const char *mode);
 (open-input-file name mode)
@@ -59,9 +23,6 @@ mode here is an optional C style flag, "a" for "alter", etc ("r" is the input de
 .Ft const char*
 .Fn s7_get_output_string(s7_scheme *sc, s7_pointer out_port);
 (get-output-string port) ;; current contents of output string- don't free the string
-.Ft void
-.Fn s7_flush_output_port(s7_scheme *sc, s7_pointer p);
-(flush-output-port port)
 .Vt typedef enum {S7_READ, S7_READ_CHAR, S7_READ_LINE, S7_PEEK_CHAR, S7_IS_CHAR_READY, S7_NUM_READ_CHOICES} s7_read_t
 .Ft s7_pointer
 .Fn s7_open_output_function(s7_scheme *sc, void (*function)(s7_scheme *sc, uint8_t c, s7_pointer port));
@@ -139,7 +100,7 @@ s7_gc_unprotect_at(sc, gc_loc);
 .Ed
 .Pp
 .Sh SEE ALSO
-.Xr s7_datatypes 3
+.Xr s7_ports 3
 .Sh AUTHORS
 .An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
 .An Mike Scholz

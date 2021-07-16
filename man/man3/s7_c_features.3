@@ -1,0 +1,95 @@
+.Dd July 12, 2021
+.Dt S7 3
+.Sh NAME
+.Nm S7
+.Nd Features
+.Sh LIBRARY
+libs7, -ls7
+.Sh SYNOPSIS
+.In s7.h
+.Ft void
+.Fn s7_provide "s7_scheme *sc, const char *feature"
+(provide 'feature)                                         procecure
+.Ft bool
+.Fn s7_is_provided "s7_scheme *sc, const char *feature"
+(provided? feature)                                          predicate
+.Pp
+.Sh DESCRIPTION
+.Vt *features*
+is a list (of symbols) describing what has been loaded into s7.
+
+.Vt (require . things)
+finds each thing (via
+.Sm off
+.Em autoload
+),
+.Sm on
+and if that thing has not already been loaded, loads the associated file.
+.Em (require integrate-envelope)
+loads
+.Pa env.scm ,
+for example (since that is where it is defined); in this case it is equivalent to simply using
+.Em integrate-envelope ,
+but if placed at the start of a file, it documents that you're using that function. In the more normal use,
+.Em (require snd-ws.scm)
+looks for the file that has
+.Em (provide 'snd-ws.scm)
+and if it hasn't already been loaded, loads it ("ws.scm" in this case). To add your own files to this mechanism, add the provided symbol via
+.Em autoload .
+Since
+.Em load
+can take an environment argument,
+.Em *features*
+and its friends follow block structure. So, for example,
+.Em (let () (require stuff.scm) ...)
+loads
+.Pa "stuff.scm"
+into the local environment, not globally.
+.Fn s7_provide
+adds
+.Em feature
+(as a symbol) to the
+.Em *features*
+list.
+.Pp
+.Vt *features*
+is an odd variable: it is spread out across the chain of environments, and can hold features in an intermediate environment that aren't in subsequent (nested) values. One simple way this can happen is to load a file in a let, but cause the load to happen at the top level. The provided entities get added to the top-level
+.Vt *features*
+value, not the current let's value, but they are actually accessible locally. So
+.Vt *features*
+is a merge of all its currently accessible values, vaguely like
+.Em call-next-method
+in CLOS. We can mimic this behavior:
+.Pp
+.Bd -literal -offset indent
+(let ((x '(a)))
+  (let ((x '(b)))
+    (define (transparent-memq sym var e)
+      (let ((val (symbol->value var e)))
+	(or (and (pair? val)
+		 (memq sym val))
+	    (and (not (eq? e (rootlet)))
+		 (transparent-memq sym var (outlet e))))))
+    (let ((ce (curlet)))
+      (list (transparent-memq 'a 'x ce)
+	    (transparent-memq 'b 'x ce)
+	    (transparent-memq 'c 'x ce)))))
+
+'((a) (b) #f)
+.Ed
+.Sh EXAMPLES
+.Bd -literal -offset indent
+.Ed
+.Pp
+.Sh SEE ALSO
+.Xr s7_load.3
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support

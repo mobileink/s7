@@ -10,8 +10,6 @@ libs7, -ls7
 .Ft s7_pointer
 .Fn s7_copy "s7_scheme *sc, s7_pointer args"
 (copy ...)
-.Ft s7_pointer
-.Fn s7_vector_copy "s7_scheme *sc, s7_pointer old_vect"
 .Ft void
 .Fn s7_c_type_set_copy "s7_scheme *sc, s7_int ttag, s7_pointer (*copy_fn)(s7_scheme *sc, s7_pointer args))"
 .Sh DESCRIPTION
@@ -68,7 +66,8 @@ verbatim code here...
 .Ed
 .Pp
 .Sh SEE ALSO
-.Xr s7_c_object_let 3 ,
+.Xr s7_c_type_set_copy 3 ,
+.Xr s7_vector_copy 3
 .Sh AUTHORS
 .An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
 .An Mike Scholz
