@@ -10,9 +10,27 @@ The original README and source code is on this branch in [s7/](s7).
 
 ## docs
 
+### manpages
+
+You can open them by file path:
+
 `$ man ./man/man7/s7.7`
 
-Most of the manpages are in man/man3.
+Or you can put them on the manpath:
+
+* MacOS looks for man directories beside the directories that are on
+  the path; run `manpath -d` to see this. So the easy way to add the
+  manpages is to add `~/bin` to your path, and softlink the s7
+  manpages to `~/man`. So if you've cloned s7 to `~/s7`:
+
+```
+~/ $ mkdir man
+~/ $ cd man
+~/ $ ln -s ../s7/man3 man/
+~/ $ ln -s ../s7/man7 man/
+```
+
+[NB: You can also use absolute paths; but this will not work: `~/ $ ln -s s7/man/man3 man/`. The link becomes `man7 => s7/man7` which won't resolve.]
 
 ## demo code
 
