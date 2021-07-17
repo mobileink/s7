@@ -8,9 +8,23 @@ libs7, -ls7
 .Sh SYNOPSIS
 .In s7.h
 .Ft bool
-.Fn  s7_is_number "s7_pointer p"                                             /* (number? p) */
+.Fn s7_is_number "s7_pointer p"
+(number? p)
+.Ft char
+.Fn *s7_number_to_string "s7_scheme *sc, s7_pointer obj, s7_int radix"
+(number->string obj radix)
+.Ft s7_double
+.Fn s7_number_to_real "s7_scheme *sc, s7_pointer x"
+x can be any kind of number
+.Ft s7_double
+.Fn s7_number_to_real_with_caller "s7_scheme *sc, s7_pointer x, const char *caller"
+.Ft s7_int
+.Fn s7_number_to_integer "s7_scheme *sc, s7_pointer x"
+.Ft s7_int
+.Fn s7_number_to_integer_with_caller "s7_scheme *sc, s7_pointer x, const char *caller"
 .Ft bool
-.Fn  s7_is_integer "s7_pointer p"                                            /* (integer? p) */
+.Fn s7_is_integer "s7_pointer p"
+(integer? p)
 .Ft s7_int
 .Fn s7_integer "s7_pointer p"
 Scheme integer -> C integer (s7_int)
@@ -28,15 +42,6 @@ Scheme real -> C double
 C double -> Scheme real
 .Ft s7_pointer
 .Fn s7_make_mutable_real "s7_scheme *sc, s7_double n"
-.Ft s7_double
-.Fn s7_number_to_real "s7_scheme *sc, s7_pointer x"
-x can be any kind of number
-.Ft s7_double
-.Fn s7_number_to_real_with_caller "s7_scheme *sc, s7_pointer x, const char *caller"
-.Ft s7_int
-.Fn s7_number_to_integer "s7_scheme *sc, s7_pointer x"
-.Ft s7_int
-.Fn s7_number_to_integer_with_caller "s7_scheme *sc, s7_pointer x, const char *caller"
 .Ft bool
 .Fn  s7_is_rational "s7_pointer arg"
 (rational? arg) -- integer or ratio
@@ -78,9 +83,6 @@ returns the Scheme object a+bi
 .Ft s7_double
 .Fn s7_imag_part "s7_pointer z"
 (imag-part z)
-.Ft char
-.Fn *s7_number_to_string "s7_scheme *sc, s7_pointer obj, s7_int radix"
-(number->string obj radix)
 
 If compiled with GMP:
 .Bd -literal -offset indent
