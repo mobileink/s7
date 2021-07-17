@@ -1,0 +1,43 @@
+.Dd July 10, 2021
+.Dt S7 3
+.Sh NAME
+.Nm S7
+.Nd Readers
+.Sh LIBRARY
+libs7, -ls7
+.Sh SYNOPSIS
+.In s7.h
+.Sh DESCRIPTION
+Leaving aside this case [multi- and in-line comments] and the booleans, #f and #t, you can specify your own handlers for tokens that start with "#". *#readers* is a list of pairs: (char . func). "char" refers to the first character after the sharp sign (#). "func" is a function of one argument, the string that follows the #-sign up to the next delimiter. "func" is called when #<char> is encountered. If it returns something other than #f, the #-expression is replaced with that value. Scheme has several predefined #-readers for cases such as #b1, #\a, and so on, but you can override these if you like. If the string passed in is not the complete #-expression, the function can use read-char or read to get the rest.
+.Sh EXAMPLES
+To implement read-time hash-tables using #h(...):
+.Bd -literal -offset indent
+(set! *#readers*
+      (cons (cons #\h (lambda (str)
+			(and (string=? str "h") ; #h(...)
+			     (apply hash-table (read)))))
+	    *#readers*))
+
+(display #h(:a 1)) (newline)
+(display #h(:a 1 :b "str")) (newline)
+These can be made immutable by (immutable! (apply...)), or even better,
+
+(let ((h (apply hash-table (read))))
+  (if (> (*s7* 'safety) 1) (immutable! h) h))
+.Ed
+.Bd -literal -offset indent
+verbatim code here...
+.Ed
+.Pp
+.Sh SEE ALSO
+.Xr s7_c_object_let 3 ,
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support

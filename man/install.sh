@@ -687,4 +687,11 @@ for i in "${s7_c_vectors[@]}"; do
     ln -s $MAN3DIR/s7_c_vectors.3 ${HOME}/man/man3/$i.3
 done
 
+s7_readers=(
+    s7_readers
+)
+for i in "${s7_readers[@]}"; do
+    echo $i
+    ln -s $MAN3DIR/s7_readers.3 ${HOME}/man/man3/$i.3
+done
 

@@ -1,0 +1,97 @@
+.Dd July 16, 2021
+.Dt S7 5
+.Sh NAME
+.Nm S7
+.Nd Globals (for lack of a better name)
+.Sh LIBRARY
+libs7, -ls7
+.Sh SYNOPSIS
+.In s7.h
+.Vt *s7*
+etc.
+.Sh DESCRIPTION
+Variable:
+.Em *s7*
+    A let that gives access to some of s7's internal state:
+.Pp
+.Bd -literal -offset indent
+print-length                  number of elements to print of a non-string sequence
+max-string-length             maximum size arg to make-string and read-string
+max-format-length             maximum size arg to ~N or the width and precision fields for floats in format
+max-list-length               maximum size arg to make-list
+max-port-data-size            maximum size of a port data buffer
+max-vector-length             maximum size arg to make-vector and make-hash-table
+max-vector-dimensions         make-vector dimensions limit
+default-hash-table-length     default size for make-hash-table (8, tables resize as needed)
+initial-string-port-length    128, initial size of a input string port's buffer
+output-port-data-size         2048, size of an output port's buffer
+
+history			      a circular buffer of recent eval entries stored backwards (use set! to add an entry)
+history-size                  eval history buffer size if s7 built WITH_HISTORY=1
+history-enabled               is history buffer receiving additions (if WITH_HISTORY=1 as above)
+debug                         determines debugging level (see debug.scm), default=0
+profile                       profile switch (0=default, 1=gather profiling info)
+profile-info                  the current profiling data; see profile.scm
+
+default-rationalize-error     1e-12
+equivalent-float-epsilon      1e-15
+hash-table-float-epsilon      1e-12 (currently limited to less than 1e-3).
+bignum-precision              bits for bignum floats (128)
+float-format-precision        digits to print for floats (16)
+default-random-state          the default arg for random
+most-positive-fixnum          if not using gmp, the most positive integer ("fixnum" comes from CL)
+most-negative-fixnum          as above, but negative
+
+safety                        0 (see below)
+undefined-identifier-warnings #f 
+undefined-constant-warnings   #f 
+accept-all-keyword-arguments  #f 
+autoloading?                  #t
+openlets                      #t, whether any let can be open globally (this overrides all openlets)
+expansions?                   #t, whether expansions are handled at read-time 
+
+cpu-time                      run time so far
+file-names                    currently loaded files (a list)
+catches                       a list of the currently active catch tags
+c-types                       a list of c-object type names (from s7_make_c_type, etc)
+
+stack			      the current stack entries
+stack-top                     current stack location
+stack-size                    current stack size
+max-stack-size                maximum stack size
+stacktrace-defaults           stacktrace formatting info for error handler
+
+rootlet-size                  the number of globals
+heap-size                     total cells currently available
+max-heap-size                 maximum heap size
+free-heap-size                the number of currently unused cells
+gc-stats                      0 (or #f), 1: show GC activity, 2: heap, 4: stack, 8: protected_objects, #t = 1
+gc-freed                      number of cells freed by the last GC pass
+gc-total-freed                number of cells freed so far by the GC; the total allocated is probably close to
+                                (with-let *s7* (+ (- heap-size free-heap-size) gc-total-freed))
+gc-info                       a list: calls total-time ticks-per-second (see profile.scm)
+gc-temps-size                 number of cells just allocated that are protected from the GC (256)
+gc-resize-heap-fraction       when to resize the heap (0.8); these two are aimed at GC experiments
+gc-resize-heap-by-4-fraction  when to get panicky about resizing the heap
+gc-protected-objects          vector of the objects permanently protected from the GC
+memory-usage                  a description of current memory allocations (sent to current-output-port)
+.Ed
+.Pp
+Use the standard environment syntax to access these fields: (*s7* 'stack-top). stuff.scm has the function *s7*->list that returns most of these fields in a list.
+.Sh EXAMPLES
+.Bd -literal -offset indent
+verbatim code here...
+.Ed
+.Pp
+.Sh SEE ALSO
+
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support

@@ -1,0 +1,37 @@
+.Dd July 10, 2021
+.Dt S7 3
+.Sh NAME
+.Nm S7
+.Nd System interface
+.Sh LIBRARY
+libs7, -ls7
+.Sh SYNOPSIS
+.In s7.h
+.Ft s7_pointer
+.Fn s7_fn "t1 arg1, t2 arg2"
+.Sh DESCRIPTION
+If the compile time switch WITH_SYSTEM_EXTRAS is 1, several additional OS-related and file-related functions are built-in. This is work in progress; currently this switch adds:
+
+(directory? str)         ; return #t if str is the name of a directory
+(file-exists? str)       ; return #t if str names an existing file
+(delete-file str)        ; try to delete the file, return 0 is successful, else -1
+(getenv var)             ; return the value of an environment variable: (getenv "HOME")
+(directory->list dir)    ; return contents of directory as a list of strings (if HAVE_DIRENT_H)
+(system command)         ; execute command
+.Sh EXAMPLES
+.Bd -literal -offset indent
+verbatim code here...
+.Ed
+.Pp
+.Sh SEE ALSO
+.Xr s7_c_object_let 3 ,
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support
