@@ -126,13 +126,14 @@ done
 # s7_datatypes=(
 # )
 
-s7_debugging=(
-    s7_debugging
+s7_c_debug=(
+    s7_c_debug
+
     s7_stacktrace
 )
-for i in "${s7_debugging[@]}"; do
+for i in "${s7_c_debug[@]}"; do
     echo $i
-    ln -s $MAN3DIR/s7_debugging.3 ${HOME}/man/man3/$i.3
+    ln -s $MAN3DIR/s7_c_debug.3 ${HOME}/man/man3/$i.3
 done
 
 s7_define=(
@@ -305,17 +306,17 @@ for i in "${s7_c_hash_tables[@]}"; do
     ln -s $MAN3DIR/s7_c_hash_tables.3 ${HOME}/man/man3/$i.3
 done
 
-s7_repl=(
-    s7_repl
+s7_c_repl=(
+    s7_c_repl
 
     s7_history
     s7_add_to_history
     s7_history_enabled
     s7_set_history_enabled
 )
-for i in "${s7_repl[@]}"; do
+for i in "${s7_c_repl[@]}"; do
     echo $i
-    ln -s $MAN3DIR/s7_repl.3 ${HOME}/man/man3/$i.3
+    ln -s $MAN3DIR/s7_c_repl.3 ${HOME}/man/man3/$i.3
 done
 
 s7_c_hooks=(
@@ -374,8 +375,8 @@ for i in "${s7_c_ports[@]}"; do
     ln -s $MAN3DIR/s7_c_ports.3 ${HOME}/man/man3/$i.3
 done
 
-s7_iterators=(
-    s7_iterators
+s7_iteration=(
+    s7_iteration
 
     s7_scm_make-iterator
     s7_scm_iterator
@@ -383,9 +384,9 @@ s7_iterators=(
     s7_scm_iterator-sequence
     s7_scm_iterator-at-end
 )
-for i in "${s7_iterators[@]}"; do
+for i in "${s7_iteration[@]}"; do
     echo $i
-    ln -s $MAN3DIR/s7_iterators.3 ${HOME}/man/man3/$i.3
+    ln -s $MAN3DIR/s7_iteration.3 ${HOME}/man/man3/$i.3
 done
 
 s7_c_iterators=(

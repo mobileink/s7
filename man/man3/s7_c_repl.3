@@ -2,13 +2,13 @@
 .Dt S7 3
 .Sh NAME
 .Nm S7
-.Nd History
+.Nd REPL (C API)
 .Sh LIBRARY
 libs7, -ls7
 .Sh SYNOPSIS
 .In s7.h
-.Ft s7_pointer
-.Fn s7_stacktrace "s7_scheme *sc"
+.Ft void
+.Fn s7_repl "s7_scheme *sc"
 .Ft s7_pointer
 .Fn s7_history "s7_scheme *sc"
 the current (circular backwards) history buffer

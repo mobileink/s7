@@ -2,13 +2,20 @@
 .Dt S7 3
 .Sh NAME
 .Nm S7
-.Nd Iterators (Scheme API)
+.Nd Iteration (Scheme API)
 .Sh SYNOPSIS
 .Em (make-iterator sequence)
+.Pp
 .Em (iterator? obj)
+.Pp
 .Em (iterate iterator)
+.Pp
 .Em (iterator-sequence iterator)
+.Pp
 .Em (iterator-at-end? iterator)
+.Pp
+.Em (for-each proc object\ . objects)
+applies proc to each element of the objects traversed in parallel. Each object can be a list, string, vector, hash-table, or any other sequence.
 .Pp
 .Sh DESCRIPTION
 make-iterator takes a sequence argument and returns an iterator object that traverses that sequence as it is called. The iterator itself can be treated as a function of no arguments, or (for code clarity) it can be the argument to iterate, which does the same thing. That is (iter) is the same as (iterate iter). The sequence that an iterator is traversing is iterator-sequence.
