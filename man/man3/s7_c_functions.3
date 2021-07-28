@@ -7,6 +7,11 @@
 libs7, -ls7
 .Sh SYNOPSIS
 .In s7.h
+.Ft bool
+.Fn s7_is_function "s7_pointer p"
+.Ft bool
+.Fn s7_is_procedure"s7_pointer x"
+(procedure? x)
 .Ft s7_pointer
 .Fn s7_define_function "s7_scheme *sc, const char *name, s7_function fnc, s7_int required_args, s7_int optional_args, bool rest_arg, const char *doc"
 .Ft s7_pointer
@@ -36,6 +41,24 @@ libs7, -ls7
 .Fn s7_make_function_star "s7_scheme *sc, const char *name, s7_function fnc, const char *arglist, const char *doc"
 .Ft s7_pointer
 .Fn s7_make_safe_function_star "s7_scheme *sc, const char *name, s7_function fnc, const char *arglist, const char *doc"
+.Ft s7_pointer
+.Fn s7_closure_body "s7_scheme *sc, s7_pointer p"
+.Ft s7_pointer
+.Fn s7_closure_let "s7_scheme *sc, s7_pointer p"
+.Ft s7_pointer
+.Fn s7_closure_args "s7_scheme *sc, s7_pointer p"
+.Ft s7_pointer
+.Fn s7_funclet "s7_scheme *sc, s7_pointer p"
+(funclet x)
+.Ft bool
+.Fn s7_is_aritable s7_scheme *sc, s7_pointer x, s7_int args"
+(aritable? x args)
+.Ft s7_pointer
+.Fn s7_arity "s7_scheme *sc, s7_pointer x"
+(arity x)
+.Ft s7_pointer
+.Fn s7_make_continuation "s7_scheme *sc"
+call/cc
 .Sh DESCRIPTION
 The functions in this section deal with integrating C functions into Scheme.
 .Pp

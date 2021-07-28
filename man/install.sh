@@ -20,10 +20,13 @@ INDEX_OFFSET=0
 MAN3DIR="`dirname $0:A`/man3"
 echo "MAN3DIR: $MAN3DIR"
 
-s7_booleans=(s7_f s7_t s7_is_boolean s7_boolean s7_make_boolean)
-for i in "${s7_booleans[@]}"; do
+s7_c_booleans=(
+    s7_c_booleans
+
+    s7_f s7_t s7_is_boolean s7_boolean s7_make_boolean)
+for i in "${s7_c_booleans[@]}"; do
     echo ${HOME}/man/man3/$i.3
-    ln -s $MAN3DIR/s7_booleans.3 ${HOME}/man/man3/$i.3
+    ln -s $MAN3DIR/s7_c_booleans.3 ${HOME}/man/man3/$i.3
 done
 
 s7_c_copy=(s7_copy)
@@ -236,6 +239,7 @@ done
 
 s7_c_environments=( # i.e. symbol table access:
     s7_c_environments
+    s7_c_with_environment
 
     s7_name_to_value
     s7_symbol_table_find_name
@@ -376,17 +380,17 @@ for i in "${s7_c_ports[@]}"; do
 done
 
 s7_iteration=(
-    s7_iteration
+    s7-iterators
 
-    s7_scm_make-iterator
-    s7_scm_iterator
-    s7_scm_iterate
-    s7_scm_iterator-sequence
-    s7_scm_iterator-at-end
+    s7-make-iterator
+    s7-iterator
+    s7-iterate
+    s7-iterator-sequence
+    s7-iterator-at-end
 )
 for i in "${s7_iteration[@]}"; do
     echo $i
-    ln -s $MAN3DIR/s7_iteration.3 ${HOME}/man/man3/$i.3
+    ln -s $MAN3DIR/s7-iterators.3 ${HOME}/man/man3/$i.3
 done
 
 s7_c_iterators=(
@@ -441,7 +445,7 @@ done
 s7_c_load=(
     s7_c_load
 
-    s7_load
+    s7_c_load
     s7_load_with_environment
     s7_load_c_string
     s7_load_c_string_with_environment
@@ -613,12 +617,12 @@ for i in "${s7_scm_equality[@]}"; do
     ln -s $MAN3DIR/s7_scm_equality.3 ${HOME}/man/man3/$i.3
 done
 
-s7_scm_sequences=(
-    s7_scm_sequences
+s7_sequences=(
+    s7_sequences
 )
-for i in "${s7_scm_sequences[@]}"; do
+for i in "${s7_sequences[@]}"; do
     echo $i
-    ln -s $MAN3DIR/s7_scm_sequences.3 ${HOME}/man/man3/$i.3
+    ln -s $MAN3DIR/s7_sequences.3 ${HOME}/man/man3/$i.3
 done
 
 s7_c_strings=(
@@ -694,5 +698,16 @@ s7_readers=(
 for i in "${s7_readers[@]}"; do
     echo $i
     ln -s $MAN3DIR/s7_readers.3 ${HOME}/man/man3/$i.3
+done
+
+# singletons
+s7_with=(
+    s7-let-temporarily
+    s7-with-baffle
+    s7-with-let
+)
+for i in "${s7_with[@]}"; do
+    echo $i
+    ln -s $MAN3DIR/$i.3 ${HOME}/man/man3/$i.3
 done
 

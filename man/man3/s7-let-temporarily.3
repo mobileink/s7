@@ -1,0 +1,59 @@
+.Dd July 10, 2021
+.Dt S7 3
+.Sh NAME
+.Nm S7
+.Nd let-temporarily
+.Sh SYNOPSIS
+.Pp
+.Em (let-temporarily ((var value)...)\ . body)
+sets each
+.Em var to its new
+.Em value ,
+evals
+.Em body ,
+then returns each var to its original value.
+.Sh DESCRIPTION
+.Em let-temporarily
+(now built-into s7) is somewhat similar to fluid-let in other Schemes. Its syntax looks like let, but it first saves the current value, then sets the variable to the new value (via
+.Em set!
+), calls the body, and finally restores the original value. It can handle anything settable:
+.Pp
+.Bd -literal -offset indent
+(let-temporarily (((*s7* 'print-length) 8)) (display x))
+This sets s7's print-length variable to 8 while displaying x, then puts it back to its original value.
+
+> (define ourlet
+    (let ((x 1))
+      (define (a-func) x)
+      (define b-func (let ((y 1))
+		       (lambda ()
+		         (+ x y))))
+    (curlet)))
+(inlet 'x 1 'a-func a-func 'b-func b-func)
+> (ourlet 'x)
+1
+> (let-temporarily (((ourlet 'x) 2))
+    ((ourlet 'a-func)))
+2
+> ((funclet (ourlet 'b-func)) 'y)
+1
+> (let-temporarily ((((funclet (ourlet 'b-func)) 'y) 3))
+    ((ourlet 'b-func)))
+4
+.Ed
+.Pp
+Despite the name, no new environment is created by let-temporarily: (let () (let-temporarily () (define x 2)) (+ x 1)) is 3.
+.Sh EXAMPLES
+.Sh SEE ALSO
+.Xr s7-with-let 3 ,
+.Xr s7_environments 3
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support

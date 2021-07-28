@@ -8,14 +8,68 @@ libs7, -ls7
 .Sh SYNOPSIS
 .In s7.h
 .Ft s7_pointer
+.Fn s7_eval "s7_scheme *sc, s7_pointer code, s7_pointer e"
+.Ft s7_pointer
 .Fn s7_eval_c_string "s7_scheme *sc, const char *str"
 (eval-string str)
 .Ft s7_pointer
 .Fn s7_eval_c_string_with_environment "s7_scheme *sc, const char *str, s7_pointer e"
+.Ft s7_pointer
+.Fn s7_apply_function "s7_scheme *sc, s7_pointer fnc, s7_pointer args"
+.Ft s7_pointer
+.Fn s7_apply_function_star "s7_scheme *sc, s7_pointer fnc, s7_pointer args"
+.Ft s7_pointer
+.Fn s7_call "s7_scheme *sc, s7_pointer func, s7_pointer args"
+.Ft s7_pointer
+.Fn s7_call_with_location "s7_scheme *sc, s7_pointer func, s7_pointer args, const char *caller, const char *file, s7_int line"
+.Ft s7_pointer
+.Fn s7_call_with_catch "s7_scheme *sc, s7_pointer tag, s7_pointer body, s7_pointer error_handler"
+.Ft s7_pointer
+.Fn s7_apply_1 "s7_scheme *sc, s7_pointer args, s7_pointer (*f1)(s7_pointer a1"
+.Ft s7_pointer
+.Fn s7_apply_n_1 "s7_scheme *sc, s7_pointer args, s7_pointer (*f1)(s7_pointer a1"
+.Pp
+and many more passing 2 to 9 arguments.
 .Sh DESCRIPTION
+These functions evaluate Scheme expressions, and call Scheme functions (which might be defined in C originally). s7_eval evaluates a list that represents Scheme code. That is,
+.Bd -literal -offset indent
+s7_eval(sc, s7_cons(sc, s7_make_symbol(sc, "+"),
+               s7_cons(sc, s7_make_integer(sc, 1),
+                  s7_cons(sc, s7_make_integer(sc, 2), s7_nil(sc)))),
+            s7_rootlet(sc));   /* s7_nil here is the same as s7_rootlet */
+.Ed
+.Pp
+returns 3 (as a Scheme integer). This may look ridiculous, but see snd-sig.c for an actual use. s7_eval_c_string evaluates a Scheme expression presented to it as a C string; it combines read and eval, whereas s7_eval is just the eval portion.
+.Pp
+.Em s7_eval_c_string(sc, "(+ 1 2)")
+also returns 3. The expression is evaluated in rootlet (the global environment). To specify the environment, use
+.Em s7_eval_c_string_with_environment .
+.Pp
+.Em s7_apply_function
+and
+.Em s7_apply_function_star
+take an
+.Em s7_function
+and apply it to a list of arguments. These two functions are the low-level versions of the
+.Em s7_call
+functions. The latter set up various catches so that error handling is safe, whereas
+.Em s7_apply_function
+assumes you have a catch already somewhere.
+.Pp
+.Em s7_call_with_location
+passes some information to the error handler, and
+.Em s7_call_with_catch
+wraps an explicit catch around a function call:
+.Em s7_call_with_catch(sc, tag, body, err)
+is equivalent to
+.Em (catch tag body err) .
+There are many examples of these functions in clm2xen.c, ffitest.c, etc.
+.Pp
+The
+.Em s7_apply_1
+functions and its many friends are left over from long ago. I hope to deprecate them someday, but currently Snd uses them to excess. Each applies its function to the arguments.
 .Sh EXAMPLES
 .Bd -literal -offset indent
-verbatim code here...
 .Ed
 .Pp
 .Sh SEE ALSO

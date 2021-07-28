@@ -1,0 +1,48 @@
+.Dd July 10, 2021
+.Dt S7 3
+.Sh NAME
+.Nm S7
+.Nd with-baffle
+.Sh SYNOPSIS
+.Pp
+.Em (with-baffle ...)
+evaluates its body in a context that blocks re-entry via
+.Em call/cc .
+.Sh DESCRIPTION
+The other side, so to speak, of
+.Em call-with-exit
+, is
+.Em with-baffle .
+Sometimes we need a normal
+.Em call/cc ,
+but want to make sure it is active only within a given block of code. Normally, if a continuation gets away, there's no telling when it might wreak havoc on us.
+.Em with-baffle
+blocks that -- no continuation can jump into its body:
+.Bd -literal -offset indent
+(let ((what's-for-breakfast ())
+      (bad-dog 'fido))        ; bad-dog wonders what's for breakfast?
+  (with-baffle                ; the syntax is (with-baffle . body)
+   (set! what's-for-breakfast
+	 (call/cc
+	  (lambda (biscuit?)
+	    (set! bad-dog biscuit?) ; bad-dog smells a biscuit!
+	    'biscuit!))))
+  (if (eq? what's-for-breakfast 'biscuit!) 
+      (bad-dog 'biscuit!))     ; now, outside the baffled block, bad-dog wants that biscuit!
+  what's-for-breakfast)        ;   but s7 says "No!": baffled! ("continuation can't jump into with-baffle")
+.Ed
+.Sh EXAMPLES
+.Sh SEE ALSO
+.Xr s7-call-cc 3,
+.Xr s7-call-with-exit 3 ,
+.Xr s7-with-let 3
+.Sh AUTHORS
+.An Bill Schottstaedt Aq Mt bil@ccrma.stanford.edu
+.An Mike Scholz
+provided the FreeBSD support (complex trig funcs, etc)
+.An Rick Taube, Andrew Burnson, Donny Ward, and Greg Santucci
+provided the MS Visual C++ support
+.An Kjetil Matheussen
+provided the mingw support
+.An chai xiaoxiang
+provided the msys2 support
