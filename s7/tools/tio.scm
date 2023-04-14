@@ -1,3 +1,5 @@
+(set! (*s7* 'heap-size) 128000)
+
 (define fsize 100000)
 (define ssize 500000)
 
@@ -227,7 +229,11 @@
 
 ;(call-funcs)
 
+;(gc) (gc)
+;(set! (*s7* 'print-length) 123123123)
+;(display (*s7* 'memory-usage)) (newline)
 ;(when (> (*s7* 'profile) 0) (show-profile 200))
+
 (exit)
 
 ;; this is dominated by fopen, fwrite, and fclose -- mallocs everywhere!, so I multiplied the string ports by 5

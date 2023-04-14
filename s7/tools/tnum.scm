@@ -71,9 +71,9 @@
       (call-with-exit
        (lambda (return)
 	 (let ((n (car (vector-dimensions matrix))))
-	   (let ((cols (make-int-vector n 0))
-		 (rows (make-int-vector n 0))
-		 (pivots (make-int-vector n 0)))
+	   (let ((cols (make-int-vector n))
+		 (rows (make-int-vector n))
+		 (pivots (make-int-vector n)))
 	     (do ((i 0 (+ i 1))
 		  (col 0 0)
 		  (row 0 0))
@@ -177,10 +177,10 @@
          (ii 0 (+ ii 1)))
 	((= ii prev)
 	 (set! prev mmax))
-      (do ((jj 0 (+ jj 1))
-           (i ii (+ i mmax))
+      (do ((i ii (+ i mmax))
            (j (+ ii prev) (+ j mmax))
-	   (tc 0.0))
+	   (tc 0.0)
+	   (jj 0 (+ jj 1)))
           ((>= jj pow)
 	   (set! wc (* wc wpc)))
         (set! tc (* wc (data j)))
@@ -517,18 +517,18 @@
 	      (set! sum (+ sum del)))))))
 
 (define (gcf a x)			;Q(a,x) evaluated as continued fraction
-  (let ((itmax 100)
-	(eps 3.0e-7)
-	(gln (gammln a))
-	(gold 0.0)			;previous value of g, tested for convergence
-	(a0 1.0)
-	(a1 x)
-	(b0 0.0)
-	(b1 1.0)			;setting up continued fraction
-	(fac 1.0)
-	(ana 0.0) (g 0.0) (anf 0.0))
-    (call-with-exit
-     (lambda (return)
+  (call-with-exit
+   (lambda (return)
+     (let ((itmax 100)
+	   (eps 3.0e-7)
+	   (gln (gammln a))
+	   (gold 0.0)			;previous value of g, tested for convergence
+	   (a0 1.0)
+	   (a1 x)
+	   (b0 0.0)
+	   (b1 1.0)			;setting up continued fraction
+	   (fac 1.0)
+	   (ana 0.0) (g 0.0) (anf 0.0))
        (do ((n 1 (+ n 1)))
 	   ((> n itmax) 
 	    (* g (exp (- (* a (log x)) x gln))))

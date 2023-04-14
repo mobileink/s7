@@ -5,6 +5,7 @@
 
 (set! (*s7* 'heap-size) 1024000)
 
+
 (define libgsl:jn (*libgsl* 'gsl_sf_bessel_Jn))
 (define libm:jn (*libm* 'jn))
 
@@ -34,8 +35,8 @@
 	      
     sum))
 
-
 (format *stderr* "~A ~A~%" (fm-cascade-component-m 2000 2000 500 1.5 50 1.0) (fm-cascade-component-g 2000 2000 500 1.5 50 1.0))
+
 
 (define (testfm)
   (do ((i 0 (+ i 1)))
@@ -44,6 +45,7 @@
     (fm-cascade-component-g 2000 2000 500 1.5 50 1.0)))
 
 (testfm)
+
 
 (define (immutable-let L)
   (with-let L 
@@ -56,34 +58,34 @@
 (with-let (sublet (immutable-let *libgsl*))
   
   (define (eigenvalues M)
-    (with-let (sublet *libgsl* (inlet 'M M))
-      (let* ((len (sqrt (length M)))
-	     (gm (gsl_matrix_alloc len len))
-	     (m (float-vector->gsl_matrix M gm))
-	     (evl (gsl_vector_complex_alloc len))
-	     (evc (gsl_matrix_complex_alloc len len))
-	     (w (gsl_eigen_nonsymmv_alloc len)))
-	
-	(gsl_eigen_nonsymmv m evl evc w)
-	(gsl_eigen_nonsymmv_free w)
-	(gsl_eigen_nonsymmv_sort evl evc GSL_EIGEN_SORT_ABS_DESC)
-	
-	(let ((vals (make-vector len)))
-	  (do ((i 0 (+ i 1)))
-	      ((= i len))
-	    (set! (vals i) (gsl_vector_complex_get evl i)))
-	  (gsl_matrix_free gm)
-	  (gsl_vector_complex_free evl)
-	  (gsl_matrix_complex_free evc)
-	  vals))))
+    (let* ((len (sqrt (length M)))
+	   (gm (gsl_matrix_alloc len len))
+	   (m (float-vector->gsl_matrix M gm))
+	   (evl (gsl_vector_complex_alloc len))
+	   (evc (gsl_matrix_complex_alloc len len))
+	   (w (gsl_eigen_nonsymmv_alloc len)))
+      
+      (gsl_eigen_nonsymmv m evl evc w)
+      (gsl_eigen_nonsymmv_free w)
+      (gsl_eigen_nonsymmv_sort evl evc GSL_EIGEN_SORT_ABS_DESC)
+      
+      (let ((vals (make-vector len)))
+	(do ((i 0 (+ i 1)))
+	    ((= i len))
+	  (set! (vals i) (gsl_vector_complex_get evl i)))
+	(gsl_matrix_free gm)
+	(gsl_vector_complex_free evl)
+	(gsl_matrix_complex_free evc)
+	vals)))
   
   (format *stderr* "~S #(4.0 2.0)~%" (eigenvalues (float-vector 3 1 1 3)))
 
-  (define (testla)
-    (do ((i 0 (+ i 1)))
-	((= i 30000))
-      (eigenvalues (float-vector 1 2 4 3))))
-
+  (define testla
+    (let ((fv (float-vector 1 2 4 3)))
+      (lambda ()
+	(do ((i 0 (+ i 1)))
+	    ((= i 30000))
+	  (eigenvalues fv)))))
   (testla)
 
   (define (num-test expr result)
@@ -563,6 +565,7 @@
       ))
 
   (testrst))
+
 
 (require libm.scm)
 (define jn (*libm* 'jn)) ; coverage tests for opt_d_id*

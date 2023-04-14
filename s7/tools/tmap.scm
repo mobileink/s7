@@ -378,6 +378,7 @@
 ;;; some coverage cases
 
 (define fsize 200000)
+
 (define (f1 lst)
   (for-each (lambda (p)
 	      (if (integer? p)
@@ -552,7 +553,7 @@
 	    lst))
 (g6 gv)
 
-(define (g6 lst)
+(define (g61 lst)
   (for-each (lambda (p)
 	      (for-each (lambda (q)
 			  (if (integer? q)
@@ -561,7 +562,7 @@
 	    lst))
 
 (define glst1 (make-list 100 (make-list 100 #\a)))
-(g6 glst1)
+(g61 glst1)
 
 (define (g16 lst)
   (map (lambda (p)
@@ -652,7 +653,29 @@
 	    lst v))
 (f27 lst nv)
 
+(define (f28)
+  (do ((p lst (cdr p))
+       (i 0 (+ i 1)))
+      ((null? p))
+    (set-car! p i))
+  (map + lst lst))
+(f28)
+
+(define (f29)
+  (let ((str (make-string 100 #\a)))
+    (set! (str 50) #\b)
+    (do ((i 0 (+ i 1)))
+	((= i 30000))
+      (map char->integer str))))
+(f29)
+
+(define (f30)
+  (do ((i 0 (+ i 1)))
+      ((= i 30))
+    (map pair? lst)))
+(f30)
+
+(newline)
 (when (> (*s7* 'profile) 0)
   (show-profile 200))
 (exit)
-

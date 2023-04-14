@@ -1,6 +1,7 @@
 ;;; vector timing tests
 
 (set! (*s7* 'heap-size) (* 2 1024000))
+(set! (*s7* 'safety) -1)
 
 ;;; --------------------------------
 
@@ -95,7 +96,7 @@
 	(sum 0))
     (do ((i 0 (+ i 1)))
 	((= i size) sum)
-      (set! sum (+ sum (if (vector-ref v i) 1 0))))))
+      (if (vector-ref v i) (set! sum (+ sum 1))))))
 
 (unless (= (f6) size)
   (format *stderr* "f6: ~S~%" (f6)))
@@ -174,7 +175,7 @@
 	((= k 10) sum)
       (do ((i 0 (+ i 1)))
 	  ((= i size/10))
-	(set! sum (+ sum (if (eq? 'a (vector-ref v k i)) 1 0)))))))
+	(if (eq? 'a (vector-ref v k i)) (set! sum (+ sum 1)))))))
 
 (unless (= (f16) size)
   (format *stderr* "f16: ~S~%" (f15)))
@@ -243,7 +244,8 @@
 	(sum 0))
     (do ((i 0 (+ i 1)))
 	((= i size) sum)
-      (set! sum (+ sum (if (zero? (real-part (vector-ref v i))) 1 0)))))) ; faster is (imag-part...)
+      (if (zero? (real-part (vector-ref v i))) ; faster is (imag-part...)
+	  (set! sum (+ sum 1))))))
 
 (unless (= (g6) size)
   (format *stderr* "g6: ~S~%" (g6)))
@@ -323,7 +325,8 @@
 	((= k 10) sum)
       (do ((i 0 (+ i 1)))
 	  ((= i size/10))
-	(set! sum (+ sum (if (char=? (vector-ref v k i) #\a) 1 0)))))))
+	(if (char=? (vector-ref v k i) #\a) 
+	    (set! sum (+ sum 1)))))))
 
 (unless (= (g16) size)
   (format *stderr* "g16: ~S~%" (g16)))
@@ -721,9 +724,11 @@
 	((= k size3) v)
       (do ((i 0 (+ i 1)))
 	  ((= i size3))
-	(do ((n 0 (+ n 1)))
+	(do ((k3 (* k size3 size3))
+	     (i3 (* i size3))
+	     (n 0 (+ n 1)))
 	    ((= n size3))
-	  (vector-set! v k i n (+ (* i size3) (* k size3 size3) n)))))))
+	  (vector-set! v k i n (+ i3 k3 n)))))))
 
 (define (sum-h1111)
   (let ((sum 0)
@@ -746,9 +751,11 @@
 	((= k size3) v)
       (do ((i 0 (+ i 1)))
 	  ((= i size3))
-	(do ((n 0 (+ n 1)))
+	(do ((k3 (* k size3 size3))
+	     (i3 (* i size3))
+	     (n 0 (+ n 1)))
 	    ((= n size3))
-	  (int-vector-set! v k i n (+ (* i size3) (* k size3 size3) n)))))))
+	  (int-vector-set! v k i n (+ i3 k3 n)))))))
 
 (define (sum-i1111)
   (let ((sum 0)
@@ -771,9 +778,11 @@
 	((= k size3) v)
       (do ((i 0 (+ i 1)))
 	  ((= i size3))
-	(do ((n 0 (+ n 1)))
+	(do ((k3 (* k size3 size3))
+	     (i3 (* i size3))
+	     (n 0 (+ n 1)))
 	    ((= n size3))
-	  (float-vector-set! v k i n (+ 0.0 (* i size3) (* k size3 size3) n)))))))
+	  (float-vector-set! v k i n (+ 0.0 i3 k3 n)))))))
 
 (define (sum-f1111)
   (let ((sum 0.0)
@@ -790,12 +799,12 @@
   (format *stderr* "f1111: ~S~%" (sum-f1111)))
 
 (define (vcop a b n)
-  (let ((c (do ((i (- n 1) (- i 1)))
-	       ((< i 0) b)
-	     (vector-set! b i (vector-ref a i)))))
-    (do ((i 0 (+ i 1)))
-	((= i n) a)
-      (vector-set! a i (vector-ref b i)))))
+  (do ((i (- n 1) (- i 1)))
+      ((< i 0) b)
+    (vector-set! b i (vector-ref a i)))
+  (do ((i 0 (+ i 1)))
+      ((= i n) a)
+    (vector-set! a i (vector-ref b i))))
 
 (define (tvcop)
   (do ((k 0 (+ k 1)))
@@ -803,6 +812,44 @@
     (vcop (make-vector 1000 1) (make-vector 1000 0) 1000)))
 
 (tvcop)
+
+;;; --------------------------------------------------------------------------------
+
+(define (randomize-vector uv)
+  (let* ((len (length uv))
+	 (v (copy uv))
+	 (unset (vector :unset))
+	 (nv (make-vector len unset))
+	 (min-i 0))
+    (do ((i 0 (+ i 1))
+	 (r (random len) (random len)))
+	((= i len))
+      (if (eq? (vector-ref v r) unset)
+	  (do ((k min-i (+ k 1)))
+	      ((or (= k len)
+		   (not (eq? (vector-ref v k) unset)))
+	       (if (= k len)
+		   (format *stderr* "can't find a value for ~S!\n" r)
+		   (begin
+		     (set! min-i (+ k 1))
+		     (vector-set! nv i (vector-ref v k))
+		     (vector-set! v k unset)))))
+	  (begin
+	    (vector-set! nv i (vector-ref v r))
+	    (vector-set! v r unset))))
+    nv))
+
+(define (rtest)
+  (let ((v (make-vector 100000)))
+    (do ((i 0 (+ i 1)))
+	((= i 100000))
+      (vector-set! v i i))
+    (randomize-vector v)))
+
+(rtest)
+
+
+;;; --------------------------------------------------------------------------------
 
 (when (> (*s7* 'profile) 0)
   (show-profile 200))

@@ -1,3 +1,4 @@
+(set! (*s7* 'heap-size) 128000) ; old-style
 (load "s7test-block.so" (sublet (curlet) (cons 'init_func 'block_init)))
 
 (define (check-cyclic p1)
@@ -13,7 +14,7 @@
     (do ((i 0 (+ i 1)))
 	((= i tries))
       (let ((p1 (cons 1 2))
-	    (p2 (list 1 1 1 1 1 1 1))
+	    (p2 (make-list 7 1))
 	    (p3 (list 1 2)))
 	(set-cdr! (cdr p3) p3)
 	(check-cyclic p1)

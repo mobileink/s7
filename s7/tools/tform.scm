@@ -1,5 +1,19 @@
-(let ((new-env (sublet (curlet) (cons 'init_func 'block_init)))) ; load calls init_func if possible
-  (load "s7test-block.so" new-env))
+(when (provided? 'pure-s7)
+  (define-macro (cond-expand . clauses)
+    (letrec ((traverse (lambda (tree)
+			 (if (pair? tree)
+			     (cons (traverse (car tree))
+				   (if (null? (cdr tree)) () (traverse (cdr tree))))
+			     (if (memq tree '(and or not else))
+				 tree
+				 (and (symbol? tree) (provided? tree)))))))
+      `(cond ,@(map (lambda (clause)
+		      (cons (traverse (car clause))
+			    (if (null? (cdr clause)) '(#f) (cdr clause))))
+		    clauses)))))
+
+
+(load "s7test-block.so" (sublet (curlet) (cons 'init_func 'block_init))) ; load calls init_func if possible
 
 (load "mockery.scm")
 
@@ -113,7 +127,24 @@
 
 (test-chars)
 
-;(do ((i 0 (+ i 1))) ((= i 1000)) (test-chars))
+(define (f)
+  (do ((i 0 (+ i 1)))
+      ((= i 100000))
+    (format #f "~{.~{~A~}+~{~A~}~}" '((1 2) (3 4 5) (6 7 8) (9)))
+    (format #f "~{.~{+~{-~W~}~}~}" '(((1 2) (3 4 5))))
+    (format #f "~{.~{+~{-~A~}~}~}" '(((1 2) (3 4 5)) ((6) (7 8 9))))
+    (format #f "~9,9F" 3.14)
+    (format #f "~19,'xf" 3.14)
+    (format #f "~{~{~~~{~D~| ~}~| ~}~}" '(((1 2) (3 4))))
+    (format #f "~10,'\\T~&~20Tasdf~&")
+    (reader-cond
+     ((<= (*s7* 'major-version) 9)
+      (format #f "~D~*~Ctwo~P ~O ~X ~B ~,3E ~1,4F ~N,G" 23 32 #\a 2 95 95 9 pi pi 3 pi))
+     (#t 
+      (format #f "~:D~*~Ctwo~P ~O ~X ~B ~,3E ~1,4F ~N,G" 23 32 #\a 2 95 95 9 pi pi 3 pi)))
+    ))
+(f)
+
 
 (when (> (*s7* 'profile) 0)
   (show-profile 200))

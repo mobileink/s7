@@ -1,3 +1,5 @@
+(set! (*s7* 'heap-size) 512000)
+
 (unless (provided? 'snd-peak-phases.scm) 
   (load "low-primes.scm")
   (load "peak-phases.scm"))
@@ -95,8 +97,7 @@
 		   (format () "~A ~D[~D][~D]: needs mod: ~A~%" choice n k i (float-vector-ref v i)))))
 	    
 	    ((real? v)
-	     (if (< v a-val)
-		 (set! a-val v)))
+	     (set! a-val (min a-val v)))
 	    
 	    (else
 	     (format () "~A ~D[~D]: bad entry: ~A (a-len: ~A)~%" choice n k v a-len))))))

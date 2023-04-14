@@ -1,3 +1,28 @@
+;;; mockery.scm
+;;;
+;;;  s7.html says that this file implements "openlets masquerading as various data
+;;;  types".  The original idea was to test the generic function support in s7 by
+;;;  creating objects that act as if they were (say) vectors or strings.  Each such
+;;;  object is a let (openlet) inheriting its methods (functions like vector-length)
+;;;  from the outer let (mock-vector-class etc), and within the object itself there
+;;;  are a 'value field and a 'mock-type field.  Each class (a let) has an associated
+;;;  make function (make-mock-vector or mock-vector etc). The class functions give
+;;;  you an object that acts everywhere in scheme like (say) a vector, but you can
+;;;  specialize it by either adding more functions, or changing the ones given, or
+;;;  adding other fields to carry around arbitrary information with the object.
+;;;  
+;;;  To make a mock-vector call (*mock-vector* 'make-mock-vector) or 
+;;;  (*mock-vector* 'mock-vector):
+;;;  
+;;;    ((*mock-vector* 'mock-vector) 1 2 3) -> #(1 2 3)
+;;;  
+;;;  This prints as #(1 2 3) but it's actually one of these mock objects:
+;;;  
+;;;    (let? ((*mock-vector* 'mock-vector) 1 2 3)) -> #t
+;;;  
+;;;  There are examples scattered around this file, and a lot more
+;;;  in s7test.scm.
+
 (provide 'mockery.scm)
 
 ;;; the exported mock data classes
@@ -30,7 +55,7 @@
     (lambda (obj)
       (cond ((mock? obj)
 	     (let-temporarily (((*s7* 'openlets) #f))
-	       (func (obj 'value))))
+	       (func (let-ref obj 'value))))
 
 	    ((not (openlet? obj))
 	     (func obj))
@@ -47,12 +72,16 @@
 
   (define (with-mock-wrapper* func)
     (lambda args
+      ;(format *stderr* "with-mock-wrapper ~S~%" args)
       (let ((unknown-openlets #f)
-	    (new-args ()))
+	    (new-args ())
+	    (got-mock #f))
 	(for-each (lambda (arg) ; not map here because (values) should not be ignored: (+ (mock-number 4/3) (values))
 		    (set! new-args
 			  (cons (if (mock? arg)
-				    (arg 'value)
+				    (begin
+				      (set! got-mock #t)
+				      (arg 'value))
 				    (begin
 				      (if (and (openlet? arg)
 					       (not (procedure? arg))
@@ -62,7 +91,7 @@
 				      arg))
 				new-args)))
 		  args)
-	(if unknown-openlets
+	(if (and unknown-openlets got-mock)
 	    (apply func (reverse! new-args))
 	    (let-temporarily (((*s7* 'openlets) #f)) 
 	      (apply func (reverse! new-args)))))))
@@ -80,13 +109,13 @@
 						 (error 'wrong-type-arg "stray mock-vector? ~S" i))
 					     (#_vector-set! (->value obj) i val))
 		       
-		       'vector-set!        (lambda (obj i val) ((obj 'local-set!) obj i val) val)
+		       'vector-set!        (lambda (obj i val) ((let-ref obj 'local-set!) obj i val) val)
 		       
 		       'let-set-fallback   (lambda (obj i val) 
 					     (if (and (integer? i)
 						      (defined? 'value obj))
 						 (begin
-						   ((obj 'local-set!) obj i val) 
+						   ((let-ref obj 'local-set!) obj i val) 
 						   val)
 						 (error 'out-of-range "unknown field: ~S" i)))
 		       
@@ -127,6 +156,7 @@
 		       'length             (with-mock-wrapper #_length)
 		       'vector-append      (with-mock-wrapper* #_vector-append)
 		       'append             (with-mock-wrapper* #_append)
+		       'vector-typer       (with-mock-wrapper #_vector-typer)
 		       'class-name         '*mock-vector*)))
 	  
 	  (define (make-mock-vector len . rest)
@@ -169,6 +199,20 @@
 	 'let-ref-fallback local-ref
 	 'vector-set! local-set!
 	 'let-set-fallback local-set!))))
+
+  ;; vector with data (mimicking Clojure):
+  (define (meta-vector v data)
+    (openlet
+     (sublet (*mock-vector* 'mock-vector-class)
+       'value v
+       'mock-type 'mock-vector?
+       'meta-data data)))
+  
+  (define v (meta-vector #(0 1 2) "hiho"))
+  (v 1): 1
+  (v 'meta-data): "hiho"
+  v: #(0 1 2)
+  (vector? v): #t
 |#
 
 
@@ -209,6 +253,8 @@
 		       'hash-table?        (with-mock-wrapper #_hash-table?)
 		       'length             (with-mock-wrapper #_length)
 		       'append             (with-mock-wrapper* #_append)
+		       'hash-table-key-typer (with-mock-wrapper #_hash-table-key-typer)
+		       'hash-table-value-typer (with-mock-wrapper #_hash-table-value-typer)
 		       'class-name         '*mock-hash-table*)))
 	  
 	  (define (make-mock-hash-table . rest)
@@ -250,7 +296,7 @@
 			  (#_hash-table-ref (obj 'value) key)))))
   
   (define (hash-table-key? obj key) 
-    ((obj 'hash-table-key?) obj key))
+    ((let-ref obj 'hash-table-key?) obj key))
   
   (define* (make-gloomy-hash-table (len 511) not-a-key)
     (let ((ht (gloomy-hash-table)))
@@ -290,7 +336,7 @@
 						   (with-mock-wrapper #_length))
 
 		       'string-append          (with-mock-wrapper* #_string-append)
-		       'string-copy            (with-mock-wrapper #_copy) ; new form -> with-mock-wrapper* ? 
+		       'string-copy            (with-mock-wrapper* #_string-copy)
 		       
 		       'string=?               (with-mock-wrapper* #_string=?)
 		       'string<?               (with-mock-wrapper* #_string<?)
@@ -301,7 +347,7 @@
 		       'string-downcase        (with-mock-wrapper #_string-downcase)
 		       'string-upcase          (with-mock-wrapper #_string-upcase)
 		       'string->symbol         (with-mock-wrapper #_string->symbol)
-		       'symbol                 (with-mock-wrapper #_symbol)
+		       'symbol                 (with-mock-wrapper* #_symbol)
 		       'string->keyword        (with-mock-wrapper #_string->keyword)
 		       'open-input-string      (with-mock-wrapper #_open-input-string)
 		       'directory?             (with-mock-wrapper #_directory?)
@@ -322,7 +368,7 @@
 		       'load                   (with-mock-wrapper* #_load)
 		       'eval-string            (with-mock-wrapper* #_eval-string)
 		       'string->list           (with-mock-wrapper* #_string->list)
-		       'bignum                 (with-mock-wrapper #_bignum)
+		       'bignum                 (with-mock-wrapper* #_bignum)
 		       'fill!                  (with-mock-wrapper* #_fill!)
 		       'write-string           (with-mock-wrapper* #_write-string)
 		       'copy                   (with-mock-wrapper* #_copy)
@@ -435,7 +481,7 @@
 		  (sublet (*mock-char* 'mock-char-class)
 		    'value c
 		    'mock-type 'mock-char?)))
-		(error 'wrong-type-arg "mock-char arg ~S is not a char" c)))
+		(error 'wrong-type-arg "mock-char argument ~S is not a char" c)))
 	  
 	  (set! mock-char? (lambda (obj)
 			     (and (let? obj)
@@ -511,6 +557,8 @@
 		 'real?            (with-mock-wrapper #_real?)
 		 'complex?         (with-mock-wrapper #_complex?)
 		 'rational?        (with-mock-wrapper #_rational?)
+		 'byte?            (with-mock-wrapper #_byte?)
+		 'float?           (with-mock-wrapper #_float?)
 		 'exact?           (with-mock-wrapper #_exact?)
 		 'inexact?         (with-mock-wrapper #_inexact?)
 		 'lognot           (with-mock-wrapper #_lognot)
@@ -584,7 +632,6 @@
 		 'subvector        (with-mock-wrapper* #_subvector)
 		 'read-string      (with-mock-wrapper* #_read-string)
 		 'length           (with-mock-wrapper #_length)
-		 'number?          (with-mock-wrapper #_number?)
 		 'class-name       '*mock-number*)))
 	  
 	  (define (mock-number x)
@@ -782,7 +829,7 @@
 								(#_list-ref (obj 'value) ind))))
 						     (openlet obj) 
 						     val)
-						   (error "let-ref mock-pair index is not an integer: ~S" ind))))
+						   (error 'wrong-type-arg "let-ref mock-pair index is not an integer: ~S" ind))))
 		       'let-set-fallback (lambda (obj ind val) 
 					   (if (eq? ind 'value)
 					       #<undefined>
@@ -792,7 +839,7 @@
 								(#_list-set! (obj 'value) ind val))))
 						     (openlet obj)
 						     val)
-						   (error "let-set! mock-pair index is not an integer: ~S" ind))))
+						   (error 'wrong-type-arg "let-set! mock-pair index is not an integer: ~S" ind))))
 		       
 		       'reverse!         (lambda (obj) 
 					   (if (mock-pair? obj)
@@ -874,10 +921,10 @@
 		       'symbol->string        (with-mock-wrapper #_symbol->string)
 		       'symbol->value         (with-mock-wrapper* #_symbol->value)
 		       'symbol->dynamic-value (with-mock-wrapper #_symbol->dynamic-value)
-		       'setter                (with-mock-wrapper #_setter)
+		       'setter                (with-mock-wrapper* #_setter)
 		       'provided?             (with-mock-wrapper #_provided?)
 		       'provide               (with-mock-wrapper #_provide)
-		       'defined?              (with-mock-wrapper #_defined?)
+		       'defined?              (with-mock-wrapper* #_defined?)
 		       'symbol->keyword       (with-mock-wrapper #_symbol->keyword)
 		       'keyword?              (with-mock-wrapper #_keyword?)
 		       'keyword->symbol       (with-mock-wrapper #_keyword->symbol)
@@ -958,7 +1005,7 @@
 	    (immutable!
 	     (openlet 
 	      (sublet (*mock-random-state* 'mock-random-state-class)
-		'value (#_random-state seed carry)
+		'value (if (provided? 'gmp) (#_random-state seed) (#_random-state seed carry))
 		'mock-type 'mock-random-state?))))
 	  
 	  (set! mock-random-state? 

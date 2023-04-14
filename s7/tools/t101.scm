@@ -48,10 +48,13 @@
   "`(ok? ',tst (catch #t (lambda () (lambda* ((!a! ,tst)) !a!)) (lambda any (lambda () 'error))) ,expected)"
   "`(ok? ',tst (lambda () (do ((!a! ,tst)) (#t !a!))) ,expected)"
   "`(ok? ',tst (lambda () (do ((__i__ 0 (+ __i__ 1))) ((= __i__ 1) ,expected) ,tst)) ,expected)"
+  "`(ok? ',tst (lambda () (do ((__i__ 0 (+ __i__ 1))) ((= __i__ 2) ,expected) (let-temporarily (((*s7* 'safety) 1)) ,tst))) ,expected)"
   "`(ok? ',tst (lambda () (let ((__x__ #f)) (define (__f__) (do ((__i__ 0 (+ __i__ 1))) ((= __i__ 1) __x__) (set! __x__ ,tst))) (__f__))) ,expected)"
+  ;;  "`(ok? ',tst (lambda () (let ((__x__ #f)) (define (__f__) (do ((__i__ 0 (+ __i__ 1))) ((= __i__ 2) __x__) (set! __x__ ,tst))) (__f__))) ,expected)"
   "`(ok? ',tst (lambda () (define (!f!) (let ((!v! (vector #f))) (do ((!i! 0 (+ !i! 1))) ((= !i! 1) (!v! 0)) (vector-set! !v! 0 ,tst)))) (!f!)) ,expected)"
   "`(ok? ',tst (lambda () (define (!f!) (let ((!v! #f)) (do ((!i! 0 (+ !i! 1))) ((= !i! 1) !v!) (set! !v! ,tst)))) (!f!)) ,expected)"
-  "`(ok? ',tst (lambda () (define (!f!) (let ((!x! (map (lambda (!a!) ,tst) '(0)))) (car !x!))) (!f!)) ,expected)"
+  "`(ok? ',tst (lambda () (define (!f!) (let ((!x! (map (lambda (!a!) ,tst) '(0)))) (if (pair? !x!) (car !x!) :no-value))) (!f!)) ,expected)"
+  "`(ok? ',tst (lambda () (define (!f!) (let ((!x! #f)) (for-each (lambda (!a!) (set! !x! ,tst)) '(0)) !x!)) (!f!)) ,expected)"
   "`(ok? ',tst (lambda () (call-with-exit (lambda (!a!) (!a! ,tst)))) ,expected)"
   "`(ok? ',tst (lambda () (call/cc (lambda (!a!) (!a! ,tst)))) ,expected)"
   "`(ok? ',tst (lambda () (values ,tst)) ,expected)"
@@ -74,8 +77,8 @@
   "`(ok? ',tst (lambda () (let ((!x 0)) (let-temporarily ((!x #f)) ,tst))) ,expected)"
   "`(ok? ',tst (lambda () (let () (define h! (make-hook '!x)) (set! (hook-functions h!) (list (lambda (!h) (set! (!h 'result) ,tst)))) (h!))) ,expected)"
   "`(ok? ',tst (lambda () (let-temporarily (((*s7* 'autoloading?) #f)) (with-let (sublet (curlet)) ,tst))) ,expected)"
-  "`(ok? ',tst (lambda () (let-temporarily (((*s7* 'safety) 1)) ,tst)) ,expected)"
-
+  "`(ok? ',tst (lambda () (let-temporarily (((*s7* 'safety) 1)) ,tst)) (let-temporarily (((*s7* 'safety) 1)) ,expected))"
+  ;; "`(ok? ',tst (lambda () (let* _L_ ((_Lx_ 1)) (if (> _Lx_ 0) (_L_ (- _Lx_ 1)) ,tst))) ,expected)"
   ;; this confuses get-zero-count, but otherwise is ok: `(ok? ',tst (lambda () (gc) ,tst) ,expected)
   ;; these are ok: "`(ok? ',tst (lambda () (define-macro (!m x) `(values ,x)) (!m ,tst)) ,expected)"
   ;;               "`(ok? ',tst (lambda () (let ((!x 0)) (let-temporarily ((!x ,tst)) !x))) ,expected)"
@@ -242,6 +245,9 @@
 (format *stderr* "~NC fbench ~NC~%" 20 #\- 20 #\-)
 (system "./repl fbench.scm")
 
+(format *stderr* "~NC tstar ~NC~%" 20 #\- 20 #\-)
+(system "./repl tstar.scm")
+
 (format *stderr* "~NC tshoot ~NC~%" 20 #\- 20 #\-)
 (system "./repl tshoot.scm")
 
@@ -257,6 +263,9 @@
 (format *stderr* "~NC tlist ~NC~%" 20 #\- 20 #\-)
 (system "./repl tlist.scm")
 
+(format *stderr* "~NC tload ~NC~%" 20 #\- 20 #\-)
+(system "./repl tload.scm")
+
 (format *stderr* "~NC tgc ~NC~%" 20 #\- 20 #\-)
 (system "./repl tgc.scm")
 
@@ -265,6 +274,15 @@
 
 (format *stderr* "~NC tmisc ~NC~%" 20 #\- 20 #\-)
 (system "./repl tmisc.scm")
+
+(format *stderr* "~NC tleft ~NC~%" 20 #\- 20 #\-)
+(system "./repl tleft.scm")
+
+(format *stderr* "~NC tlamb ~NC~%" 20 #\- 20 #\-)
+(system "./repl tlamb.scm")
+
+(format *stderr* "~NC thook ~NC~%" 20 #\- 20 #\-)
+(system "./repl thook.scm")
 
 (format *stderr* "~NC tcase ~NC~%" 20 #\- 20 #\-)
 (system "./repl tcase.scm")
@@ -289,5 +307,8 @@
 
 (format *stderr* "~NC full s7test ~NC~%" 20 #\- 20 #\-)
 (system "./repl full-s7test.scm")
+
+(system "gcc -o trepl trepl.c s7.o -O -Wl,-export-dynamic -lm -I. -ldl")
+(system "trepl")
 
 (exit)

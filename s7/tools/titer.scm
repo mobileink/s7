@@ -4,11 +4,10 @@
 
 (let ((with-blocks #f))
   (when with-blocks
-    (let ((new-env (sublet (curlet) (cons 'init_func 'block_init)))) ; load calls init_func if possible
-      (load "s7test-block.so" new-env)))
+    (load "s7test-block.so" (sublet (curlet) (cons 'init_func 'block_init)))) ; load calls init_func if possible
   
   (define-constant (find-if-a iter)
-    (case (type-of (iterate iter))
+    (case (type-of (iterate iter)) ; op_tc_case
       ((string?) #t)
       ((eof-object?) #f)
       (else (find-if-a iter))))
@@ -23,7 +22,7 @@
   
   (define-constant (find-if-c iter)
     (do ((obj (iterate iter) (iterate iter)))
-	((memq (type-of obj) '(eof-object? string?))
+	((or (string? obj) (eof-object? obj))
 	 (string? obj))))
   
   (define-constant (find-if-d iter)
@@ -33,7 +32,7 @@
       (do ()
 	  ((or (string? (iterate iter)) (iterator-at-end? iter))))))
   
-  (define (test)
+  (define (itest)
     (for-each
      (lambda (size)
        (format *stderr* "~D: " size)
@@ -95,7 +94,7 @@
 	 ))
      (list 1 10 100 1000 10000 100000 1000000)))
   
-  (test)
+  (itest)
 
   (when (> (*s7* 'profile) 0)
     (show-profile 200))

@@ -6,7 +6,7 @@ cp tools/tauto.scm .
 cp ~/cl/t923.scm .
 cp ~/cl/t101.scm .
 cp tools/*.scm .
-cp ~/cl/make-repl .
+# cp ~/cl/make-repl .
 cp ~/cl/low-primes.scm .
 cp ~/cl/full-s7test.scm .
 cp ~/cl/lt.scm .
@@ -76,7 +76,7 @@ repl s7test.scm
 echo ' '
 echo '-------- initial sizes --------'
 echo ' '
-gcc s7.c -c -I. -g3 -DINITIAL_HEAP_SIZE=32768 -DINITIAL_STACK_SIZE=512 -DINITIAL_PROTECTED_OBJECTS_SIZE=4 -DGC_TEMPS_SIZE=512 -DSYMBOL_TABLE_SIZE=10009 -DNUM_SMALL_INTS=512 -ldl -lm -Wl,-export-dynamic
+gcc s7.c -c -I. -g3 -DINITIAL_HEAP_SIZE=32768 -DINITIAL_STACK_SIZE=512 -DINITIAL_PROTECTED_OBJECTS_SIZE=4 -DGC_TEMPS_SIZE=512 -DSYMBOL_TABLE_SIZE=10009 -DNUM_SMALL_INTS=256 -ldl -lm -Wl,-export-dynamic
 gcc -o repl repl.c -g3 -Wall s7.o -I. -lm -ldl -Wl,-export-dynamic
 repl s7test.scm
 
@@ -102,9 +102,23 @@ gcc -o repl repl.c -g3 -Wall s7.o -I. -lm -ldl -Wl,-export-dynamic
 repl fulltest.scm
 
 echo ' '
+echo '-------- number-separator --------'
+echo ' '
+gcc s7.c -c -I. -DWITH_NUMBER_SEPARATOR=1 -g3 -ldl -lm -Wl,-export-dynamic
+gcc -o repl repl.c -g3 -Wall s7.o -I. -lm -ldl -Wl,-export-dynamic
+repl fulltest.scm
+
+echo ' '
+echo '-------- disable-autoload --------'
+echo ' '
+gcc s7.c -c -I. -DDISABLE_AUTOLOAD=1 -g3 -ldl -lm -Wl,-export-dynamic
+gcc -o repl repl.c -g3 -Wall s7.o -I. -lm -ldl -Wl,-export-dynamic
+repl fulltest.scm
+
+echo ' '
 echo '-------- silly stuff --------'
 echo ' '
-gcc s7.c -c -I. -DEXTRA_EXPONENT_MARKERS=1 -DS7_ALIGNED=1 -DWITH_VECTORIZE=0 -g3 -ldl -lm -Wl,-export-dynamic
+gcc s7.c -c -I. -DEXTRA_EXPONENT_MARKERS=1 -DS7_ALIGNED=1 -DWITH_VECTORIZE=0 -DWITH_MULTITHREAD_CHECKS=0 -g3 -ldl -lm -Wl,-export-dynamic
 gcc -o repl repl.c -g3 -Wall s7.o -I. -lm -ldl -Wl,-export-dynamic
 repl s7test.scm
 
@@ -116,9 +130,24 @@ gcc -o repl repl.c -g3 -Wall s7.o -I. -lm -ldl -Wl,-export-dynamic
 repl s7test.scm
 
 echo ' '
+echo '-------- disable-file-output --------'
+echo ' '
+gcc s7.c -c -I. -DDISABLE_FILE_OUTPUT=1 -g3 -ldl -lm -Wl,-export-dynamic
+# gcc -o repl repl.c -g3 -Wall s7.o -I. -lm -ldl -Wl,-export-dynamic
+# repl s7test.scm
+
+echo ' '
 echo '-------- valgrind --------'
 echo ' '
 gcc s7.c -c -I. -g3 -ldl -lm -Wl,-export-dynamic
 gcc -o repl repl.c -g3 -Wall s7.o -I. -lm -ldl -Wl,-export-dynamic
 valgrind repl s7test.scm
 valgrind repl fulltest.scm
+
+gcc -o nrepl s7.c -O2 -I. -Wl,-export-dynamic -lm -ldl -DWITH_MAIN -DWITH_NOTCURSES -lnotcurses-core
+
+echo ' '
+echo '-------- tcc --------'
+echo ' '
+tcc -o repl s7.c -I. -g3 -lm -DWITH_MAIN -ldl -rdynamic -DWITH_C_LOADER -DS7_DEBUGGING
+repl s7test.scm

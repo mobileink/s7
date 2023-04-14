@@ -1,6 +1,9 @@
 ;;; list timing tests
 
+(set! (*s7* 'heap-size) 512000)
+
 (define count 150000)
+
 
 (define (cxr tries)
   (let* ((iv (make-list 28))
@@ -190,19 +193,20 @@
 
 
 
-(define (c?r path)
-  (define (X-marks-the-spot accessor tree)
-    (if (eq? tree 'X)
-        accessor
-        (and (pair? tree)
-	     (or (X-marks-the-spot (cons 'car accessor) (car tree))
-	         (X-marks-the-spot (cons 'cdr accessor) (cdr tree))))))
-  (let ((body 'lst))
-    (for-each
-     (lambda (f)
-       (set! body (list f body)))
-     (reverse (X-marks-the-spot () path)))
-    body))
+(define c?r
+  (let ((body ()))
+    (define (X-marks-the-spot accessor tree)
+      (if (eq? tree 'X)
+	  accessor
+	  (and (pair? tree)
+	       (or (X-marks-the-spot (cons 'car accessor) (car tree))
+		   (X-marks-the-spot (cons 'cdr accessor) (cdr tree))))))
+    (define (extend-path f)
+      (set! body (list f body)))
+    (lambda (path)
+      (set! body 'lst)
+      (for-each extend-path (reverse (X-marks-the-spot () path)))
+      body)))
 
 (define (find-X tries)
   (let ((val ()))
@@ -232,7 +236,7 @@
 (define (list-r a b n) 
   (if (= n 0)
       (list a b) 
-      (list (list-r (+ a 1) (+ b 1) (- n 1)) 
+      (cons (list-r (+ a 1) (+ b 1) (- n 1)) 
 	    (list-r (- a 1) (- b 1) (- n 1)))))
 
 (define (list-test tries)

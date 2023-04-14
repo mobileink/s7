@@ -11,17 +11,14 @@
 
 (unless (defined? '*notcurses*)          ; nrepl.c has notcurses_s7.c (thus *notcurses*) built-in
   (load "notcurses_s7.so" (inlet 'init_func 'notcurses_s7_init)))
-(unless (defined? 'nccell_make)        (define nccell_make cell_make))
-(unless (defined? 'nccell_gcluster)    (define nccell_gcluster cell_gcluster))
-(unless (defined? 'nccell_channels)    (define nccell_channels cell_channels))
-(unless (defined? 'nccell_stylemask)   (define nccell_stylemask cell_stylemask))
-(unless (defined? 'nccells_double_box) (define nccells_double_box cells_double_box))
+(unless (defined? 'notcurses_getc) (define (notcurses_getc a b c d) (notcurses_get a b d)))
 
 (define (drop-into-repl call e)
   ((*nrepl* 'run) "break>" (object->string call) e))
 
 (define (display-debug-info cint) #f) ; replaced later
 (define (remove-watcher var) #f)
+(define (nrepl-lookup symbol) (((*nrepl* 'top-level-let) 'run-let) symbol))
 
 (define (debug.scm-init)
   (set! (debug-repl)
@@ -77,6 +74,7 @@
 	      :ncp-let #f
 	      :display-status #f
 	      :status-text ""
+	      :run-let #f
 
 	      :s7-version (lambda () (*s7* 'version))
 
@@ -144,7 +142,7 @@
 					       result))))))
 			     (make-iterator iterloop))))))
 
-		(lambda* (name (e (*nrepl* 'top-level-let)))
+		(lambda* (name (e (sublet (*nrepl* 'top-level-let) *notcurses*)))
 		  (let ((ap-name (if (string? name) name
 				     (if (symbol? name)
 					 (symbol->string name)
@@ -260,7 +258,7 @@
 			       (ash (floor (* g 256)) 8)
 			       (floor (* b 256)))))
 	    (set! (nccell_gcluster c1) (char->integer #\space))
-	    (set! (nccell_channels c1) (logior CELL_FGDEFAULT_MASK CELL_BGDEFAULT_MASK color)))
+	    (set! (nccell_channels c1) (logior (ash NC_BGDEFAULT_MASK 32) NC_BGDEFAULT_MASK color)))
 	  (set! (nccell_stylemask c1) 0)
 	  (ncplane_set_base_cell statp c1)
 	  (notcurses_render nc)
@@ -287,7 +285,7 @@
       (define (red c)
 	(let ((c1 (nccell_make)))
 	  (set! (nccell_gcluster c1) (char->integer c))
-	  (set! (nccell_channels c1)  (logior CELL_FGDEFAULT_MASK #xff000000000000))
+	  (set! (nccell_channels c1)  (logior (ash NC_BGDEFAULT_MASK 32) #xff000000000000))
 	  (set! (nccell_stylemask c1) 0)
 	  c1))
 
@@ -344,6 +342,7 @@
 				     (if (and wc (= y (+ watch-row 1)))
 					 (min (- watch-col 1) (+ x ncp-col))
 					 (+ x ncp-col))))
+	  (set! (top-level-let :run-let) (curlet))
 	  (when header
 	    (set! hc-cells (vector (nccell_make) (nccell_make) (nccell_make) (nccell_make) (nccell_make) (nccell_make)))
 	    (let ((newline-pos (char-position #\newline header)))
@@ -397,6 +396,12 @@
 	      (set! (nccell_channels c1) 0)
 	      (set! (nccell_stylemask c1) 0)
 	      (ncplane_set_base_cell ncp c1)
+
+	      (unless header
+		(set! header-row 1) ; avoid first row -- output is meesed up by notcurses
+		(set! row 1)
+		(set! header-cols nc-cols))
+
 	      (notcurses_render nc))
 
 	    (let ((last-name ""))
@@ -597,16 +602,17 @@
 	    ;; we load lint above, at which time it sets its *output-port* to *stderr* (the global built-in port), but
 	    ;;   when called in the repl, we have over-ridden *stderr* to place that output in the notcurses display,
 	    ;;   so we need to redirect lint's output by hand.
-	    (set! lint ; force top-level change
-	      (let ((old-lint lint))
-		(lambda* (file (outp :unset) (report-input :unset))
-		  (if (and (eq? outp :unset)
-			   (eq? report-input :unset))
-		      (nc-multiline-display
-		       (call-with-output-string
-			(lambda (p)
-			  (old-lint file p))))
-		      (old-lint file outp report-input)))))
+	    (when with-lint
+	      (set! lint ; force top-level change
+		    (let ((old-lint lint))
+		      (lambda* (file (outp :unset) (report-input :unset))
+			(if (and (eq? outp :unset)
+				 (eq? report-input :unset))
+			    (nc-multiline-display
+			     (call-with-output-string
+			      (lambda (p)
+				(old-lint file p))))
+			    (old-lint file outp report-input))))))
 
 
 	    ;; -------- top-level-let --------
@@ -972,8 +978,11 @@
 		      (mouse-col #f)
 		      (mouse-row #f)
 		      (repl-done #f)
-		      (selection #f)
-		      (control-key (ash 1 33)))    ; notcurses getc returns 32 bits
+		      (selection "")
+                      (previously-selected #f)
+                      (just-selected #f)
+		      (control-key (ash 1 33))
+                      (meta-key (ash 1 34)))    ; notcurses get returns 32 bits
 
 		  (set! (top-level-let 'ncp-let) (curlet))
 		  (set! display-debug-info local-debug-info)
@@ -1083,11 +1092,11 @@
 								      (when (eq? (h 'plane) ncp)
 									(set! ncp-row (h 'y))
 									(set! ncp-col (h 'x)))))))
-					     (set-sigint-handler)                                  ; catch C-C to interrupt computation
+					     ;(set-sigint-handler)                                 ; catch C-C to interrupt computation -- this no longer works in notcurses
 					     (let ((str (with-output-to-string                     ; for scheme side output
 							  (lambda ()
 							    (set! val (list (new-eval form envir))))))) ; list, not lambda -- confuses trace!
-					       (unset-sigint-handler nc)                           ; catch C-C to exit cleanly
+					       ;(unset-sigint-handler nc)                           ; catch C-C to exit cleanly
 
 					       (for-each
 						(lambda (s)
@@ -1112,7 +1121,7 @@
 					   (nc-multiline-display (object->string val))))))
 
 				   (lambda (type info)
-				     (unset-sigint-handler nc)
+				     ;(unset-sigint-handler nc)
 				     (if (eq? type 'string-read-error)
 					 (begin
 					   ;; missing close paren, newline already added, spaces here are not optional!
@@ -1122,7 +1131,7 @@
 					 (apply throw type info)))))   ; re-raise error
 
 			       (lambda (type info)
-				 (unset-sigint-handler nc)
+				 ;(unset-sigint-handler nc)
 				 (if (and (eq? type 'read-error)       ; maybe we hit <enter> in a block comment
 					  (equal? info '("unexpected end of input while reading #|")))
 				     (begin
@@ -1154,67 +1163,121 @@
 		      ((= i 256))
 		    (set! (keymap i) normal-char))
 
-		  (set! (keymap (char->integer #\escape))
+                  (define (prepend-to-selection new-text)
+                    (unless (zero? (length new-text))
+                      (set! selection (if previously-selected (append new-text selection)
+					  new-text))
+                      (set! just-selected #t)))
+                  (define (append-to-selection new-text)
+                    (unless (zero? (length new-text))
+                      (set! selection (if previously-selected (append selection new-text)
+					  new-text))
+                      (set! just-selected #t)))
+                  (define (char-separator? c)
+                    (char-position c " ()`',\"#"))
+                  (define (word-back-x) ;; some of these are courtesy of Elijah Stone
+                    (let loop ((col (max (bols row) (- col 1))))
+                      (if (= col (bols row))
+			  col
+			  (if (char-separator? (ncplane_contents ncp row col 1 1))
+			      (loop (- col 1))
+			      (let loop ((col col))
+				(if (or (= col (bols row))
+					(char-separator? (ncplane_contents ncp row (- col 1) 1 1)))
+				    col
+				    (loop (- col 1))))))))
+                  (define (word-forward-x)
+                    (let loop ((col (min (eols row) (+ col 1))))
+                      (if (= col (eols row))
+			  col
+			  (if (char-separator? (ncplane_contents ncp row col 1 1))
+			      (loop (+ col 1))
+			      (let loop ((col col))
+				(if (or (= col (eols row))
+					(char-separator? (ncplane_contents ncp row col 1 1)))
+				    col
+				    (loop (+ col 1))))))))
+		  
+                  (set! (keymap (+ meta-key (char->integer #\B)))
+			(set! (keymap (+ meta-key (char->integer #\b)))
+			      (lambda (c)
+				(set! col (word-back-x)))))
+		  
+                  (set! (keymap (+ meta-key (char->integer #\C)))
+			(set! (keymap (+ meta-key (char->integer #\c)))
+			      (lambda (c)
+				(do ((len (- (eols row) col))
+				     (cur-line (ncplane_contents ncp row col 1 (- (eols row) col)))
+				     (i 0 (+ i 1)))
+				    ((or (= i len)
+					 (char-alphabetic? (cur-line i)))
+				     (when (< i len)
+				       (set! (cur-line i) (char-upcase (cur-line i)))
+				       (nc-display row col cur-line)
+				       (notcurses_refresh nc)
+				       (do ((k (+ i 1) (+ k 1)))
+					   ((or (>= k len)
+						(not (or (char-alphabetic? (cur-line k))
+							 (char-numeric? (cur-line k)))))
+					    (set! col (min (eols row) (+ col k)))))))))))
+		  
+                  (set! (keymap (+ meta-key (char->integer #\D)))
+			(set! (keymap (+ meta-key (char->integer #\d)))
+			      (lambda (c)
+				(let ((newcol (word-forward-x)))
+				  (append-to-selection (ncplane_contents ncp row col 1 (- newcol col)))
+				  (nc-display row col (ncplane_contents ncp row newcol 1 (- (eols row) newcol)))
+				  (nc-display row (- (eols row) (- newcol col)) (make-string (- newcol col) #\space))
+				  (set! (eols row) (- (eols row) (- newcol col)))))))
+		  
+                  (set! (keymap (+ meta-key (char->integer #\F)))
+			(set! (keymap (+ meta-key (char->integer #\f)))
+			      (lambda (c)
+				(set! col (word-forward-x)))))
+		  
+                  (set! (keymap (+ meta-key (char->integer #\L)))
+			(set! (keymap (+ meta-key (char->integer #\l)))
+			      (lambda (c)
+				(do ((len (- (eols row) col))
+				     (cur-line (ncplane_contents ncp row col 1 (- (eols row) col)))
+				     (i 0 (+ i 1)))
+				    ((or (= i len)
+					 (char-alphabetic? (cur-line i)))
+				     (when (< i len)
+				       (do ((k i (+ k 1)))
+					   ((or (= k len)
+						(not (char-alphabetic? (cur-line k))))
+					    (nc-display row col cur-line)
+					    (notcurses_refresh nc)
+					    (set! col (+ col k)))
+					 (set! (cur-line k) (char-downcase (cur-line k))))))))))
+		  
+                  (set! (keymap (+ meta-key (char->integer #\U)))
+			(set! (keymap (+ meta-key (char->integer #\u)))
+			      (lambda (c)
+				(do ((len (- (eols row) col))
+				     (cur-line (ncplane_contents ncp row col 1 (- (eols row) col)))
+				     (i 0 (+ i 1)))
+				    ((or (= i len)
+					 (char-alphabetic? (cur-line i)))
+				     (when (< i len)
+				       (do ((k i (+ k 1)))
+					   ((or (= k len)
+						(not (char-alphabetic? (cur-line k))))
+					    (nc-display row col cur-line)
+					    (notcurses_refresh nc)
+					    (set! col (+ col k)))
+					 (set! (cur-line k) (char-upcase (cur-line k))))))))))
+		  
+                  (set! (keymap (+ meta-key (char->integer #\<)))
 			(lambda (c)
-			  ;; these are the Meta key handlers
-			  (let ((k (notcurses_getc nc (c-pointer 0) (c-pointer 0) ni)))
-
-			    (case (integer->char k)
-			      ((#\C #\c)
-			       (do ((len (- (eols row) col))
-				    (cur-line (ncplane_contents ncp row col 1 (- (eols row) col)))
-				    (i 0 (+ i 1)))
-				   ((or (= i len)
-					(char-alphabetic? (cur-line i)))
-				    (when (< i len)
-				      (set! (cur-line i) (char-upcase (cur-line i)))
-				      (nc-display row col cur-line)
-				      (notcurses_refresh nc)
-				      (do ((k (+ i 1) (+ k 1)))
-					  ((or (>= k len)
-					       (not (or (char-alphabetic? (cur-line k))
-							(char-numeric? (cur-line k)))))
-					   (set! col (min (eols row) (+ col k)))))))))
-
-			      ((#\L #\l)
-			       (do ((len (- (eols row) col))
-				    (cur-line (ncplane_contents ncp row col 1 (- (eols row) col)))
-				    (i 0 (+ i 1)))
-				   ((or (= i len)
-					(char-alphabetic? (cur-line i)))
-				    (when (< i len)
-				      (do ((k i (+ k 1)))
-					  ((or (= k len)
-					       (not (char-alphabetic? (cur-line k))))
-					   (nc-display row col cur-line)
-					   (notcurses_refresh nc)
-					   (set! col (+ col k)))
-					(set! (cur-line k) (char-downcase (cur-line k))))))))
-
-			      ((#\U #\u)
-			       (do ((len (- (eols row) col))
-				    (cur-line (ncplane_contents ncp row col 1 (- (eols row) col)))
-				    (i 0 (+ i 1)))
-				   ((or (= i len)
-					(char-alphabetic? (cur-line i)))
-				    (when (< i len)
-				      (do ((k i (+ k 1)))
-					  ((or (= k len)
-					       (not (char-alphabetic? (cur-line k))))
-					   (nc-display row col cur-line)
-					   (notcurses_refresh nc)
-					   (set! col (+ col k)))
-					(set! (cur-line k) (char-upcase (cur-line k))))))))
-
-			      ((#\<)
-			       (set-row 0)
-			       (set-col (bols 0)))
-
-			      ((#\>)
-			       (set-row ncp-max-row)
-			       (set-col (bols ncp-max-row)))
-
-			      )))) ; end Meta keys
+			  (set-row 0)
+			  (set-col (bols 0))))
+		  
+                  (set! (keymap (+ meta-key (char->integer #\>)))
+			(lambda (c)
+			  (set-row ncp-max-row)
+			  (set-col (bols ncp-max-row))))
 
 		  (set! (keymap (char->integer #\tab)) tab)
 
@@ -1234,6 +1297,10 @@
 				(if (< row old-row)
 				    (set-col (eols row))))
 			      (set-col (max (bols row) (- col 1))))))
+
+		  (set! (keymap (+ control-key (char->integer #\C)))
+			(lambda (c)
+			  (set! repl-done #t)))
 
 		  (set! (keymap (+ control-key (char->integer #\D)))
 			(lambda (c)
@@ -1265,9 +1332,9 @@
 			  (ncplane_move_yx ncp ncp-row ncp-col)
 			  (reprompt row)))
 
-		  (set! (keymap (+ control-key (char->integer #\K)))
+                  (set! (keymap (+ control-key (char->integer #\K)))
 			(lambda (c)
-			  (set! selection (ncplane_contents ncp row col 1 (- (eols row) col)))
+			  (append-to-selection (ncplane_contents ncp row col 1 (- (eols row) col)))
 			  (nc-display row col (make-string (- (eols row) col) #\space))
 			  (set! (eols row) col)))
 
@@ -1295,14 +1362,14 @@
 				(set! bols (copy bols (make-int-vector ncp-rows)))
 				(set! eols (copy eols (make-int-vector ncp-rows))))
 
-				(do ((i (+ ncp-max-row 1) (- i 1)))
-				    ((= i (+ row 1))
-				     (set! ncp-max-row (+ ncp-max-row 1)))
-				  (let ((contents (ncplane_contents ncp (- i 1) 0 1 (eols (- i 1)))))
-				    (clear-line i)
-				    (nc-display i 0 contents)) ; should this be indented?
-				  (set! (eols i) (eols (- i 1)))
-				  (set! (bols i) (bols (- i 1)))))
+			      (do ((i (+ ncp-max-row 1) (- i 1)))
+				  ((= i (+ row 1))
+				   (set! ncp-max-row (+ ncp-max-row 1)))
+				(let ((contents (ncplane_contents ncp (- i 1) 0 1 (eols (- i 1)))))
+				  (clear-line i)
+				  (nc-display i 0 contents)) ; should this be indented?
+				(set! (eols i) (eols (- i 1)))
+				(set! (bols i) (bols (- i 1)))))
 
 			    (nc-display row col (make-string (- (eols row) col) #\space))
 			    (set! (eols row) col)
@@ -1338,6 +1405,23 @@
 			      (if (< cur (eols row))
 				  (set-col (+ cur 1)))))))
 
+                  (set! (keymap (+ control-key (char->integer #\U)))
+			(lambda (c)
+			  (prepend-to-selection (ncplane_contents ncp row (bols row) 1 (- col (bols row))))
+			  (nc-display row (bols row) (ncplane_contents ncp row col 1 (- (eols row) col)))
+			  (nc-display row (- (eols row) (- col (bols row))) (make-string (- col (bols row)) #\space))
+			  (set! (eols row) (- (eols row) (- col (bols row))))
+			  (set! col (bols row))))
+		  
+                  (set! (keymap (+ control-key (char->integer #\W)))
+			(lambda (c)
+			  (let ((newcol (word-back-x)))
+			    (prepend-to-selection (ncplane_contents ncp row newcol 1 (- col newcol)))
+			    (nc-display row newcol (ncplane_contents ncp row col 1 (- (eols row) col)))
+			    (nc-display row (- (eols row) (- col newcol)) (make-string (- col newcol) #\space))
+			    (set! (eols row) (- (eols row) (- col newcol)))
+			    (set! col newcol))))
+		  
 		  (set! (keymap (+ control-key (char->integer #\Y)))
 			(lambda (c)
 			  (when (string? selection)
@@ -1350,7 +1434,7 @@
 				       (> (length trailing) 0))
 				  (nc-display row (+ col (length selection)) trailing)))
 			    (set! (eols row) (+ (eols row) (length selection)))
-			    (set-col (eols row)))))
+			    (set-col (+ col (length selection))))))
 
 		  (set! (keymap NCKEY_LEFT)       ; arrow keys
 			(lambda (c)
@@ -1412,18 +1496,18 @@
 			(lambda (c)
 			  ;; ncinput gives row|col in current view, so we need to map that to the ncplane row|col
 			  ;(display-status (format #f "nc-rows: ~S, ncp-row: ~S, input: ~S" nc-rows ncp-row (ncinput_y ni)))
-			  (set-row (min ncp-max-row (- (ncinput_y ni) ncp-row)))
-			  (set-col (max (min (eols row) (ncinput_x ni)) (bols row)))
-			  (unless mouse-col
-			    (set! mouse-col col)
-			    (set! mouse-row row))))
-
-		  (set! (keymap NCKEY_RELEASE)  ; mouse button release
-			(lambda (c)
-			  (when (and (number? mouse-col)
-				     (not (= col mouse-col)))
-			    (set! selection (ncplane_contents ncp mouse-row (min col mouse-col) 1 (abs (- col mouse-col)))))
-			  (set! mouse-col #f)))
+			  (if (= (ncinput_evtype ni) NCTYPE_RELEASE)
+			      (begin
+				(when (and (number? mouse-col)
+					   (not (= col mouse-col)))
+				  (set! selection (ncplane_contents ncp mouse-row (min col mouse-col) 1 (abs (- col mouse-col)))))
+				(set! mouse-col #f))
+			      (begin
+				(set-row (min ncp-max-row (- (ncinput_y ni) ncp-row)))
+				(set-col (max (min (eols row) (ncinput_x ni)) (bols row)))
+				(unless mouse-col
+				  (set! mouse-col col)
+				  (set! mouse-row row))))))
 
 		  (set! (keymap NCKEY_ENTER) enter)
 
@@ -1472,8 +1556,15 @@
 			  (when recursor
 			    (recover-previous-layout))
 
+                          (set! previously-selected just-selected)
+                          (set! just-selected #f)
+			  
 			  (let* ((c (notcurses_getc nc (c-pointer 0) (c-pointer 0) ni))
-				 (func (hash-table-ref keymap (if (ncinput_ctrl ni) (+ c control-key) c))))
+                                 (c (if (= c (char->integer #\escape))
+					(logior meta-key (notcurses_getc nc (c-pointer 0) (c-pointer 0) ni))
+					c))
+				 (func (hash-table-ref keymap (logior c (if (ncinput_ctrl ni) control-key 0)
+								      (if (ncinput_alt ni) meta-key 0)))))
 
 			    (if (procedure? func)
 				(catch #t
@@ -1621,7 +1712,7 @@
 		(set! nc (notcurses_core_init noptions)))
 	      (notcurses_cursor_enable nc 0 2)
 	      (unless (string-position "rxvt" ((libc-let 'getenv) "TERM"))
-		(notcurses_mouse_enable nc)) ; 0 if ok, -1 if failure
+		(notcurses_mice_enable nc NCMICE_ALL_EVENTS)) ; 0 if ok, -1 if failure
 	      (let ((size (ncplane_dim_yx (notcurses_stdplane nc))))
 		(set! nc-cols (cadr size))
 		(set! nc-rows (car size))

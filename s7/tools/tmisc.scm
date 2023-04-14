@@ -107,6 +107,77 @@
     (w3)))
 
 
+;;; -------- implicit/generalized set! --------
+
+(define (fs1)
+  (let-temporarily (((*s7* 'print-length) 8))
+    123))
+
+(define (fs2)
+  (let ((x 32)) 
+    (set! ((curlet) 'x) 3)
+    x))
+
+(define (fs3)
+  (set! (with-let (curlet) (*s7* 'print-length)) 16)
+  (*s7* 'print-length))
+
+(define (fs4)
+  (let ((e (inlet :v (vector 1 2))))
+    (set! (with-let e (v 0)) 'a)
+    (e 'v)))
+
+(define (fs5)
+  (let ((v (vector (inlet 'a 0))))
+    (set! (v 0 'a) 32)
+    ((v 0) 'a)))
+
+(define (fs6)
+  (let ((e (inlet 'x (inlet 'b 2))))
+    (set! (e 'x 'b) 32)
+    ((e 'x) 'b)))
+
+(define (fs7)
+  (let ((L (list (list 1 2)))) 
+    (set! (L 0 0) 3)
+    L))
+
+(define (fs8)
+  (let ((H (hash-table 'a (hash-table 'b 2))))
+    (set! (H 'a 'b) 32)
+    ((H 'a) 'b)))
+
+(define (fs9)
+  (let ((v (vector 1 2)))
+    (let-temporarily (((v 1) 32))
+      (v 1))))
+
+(define fs10
+  (let ((val 0))
+    (let ((fs (dilambda (lambda () val) (lambda (v) (set! val v)))))
+      (lambda ()
+	(set! (fs) 32)
+	(fs)))))
+
+    
+(define (tf)
+  (do ((i 0 (+ i 1)))
+      ((= i 150000))
+    (fs1)
+    (fs2)
+    (fs3)
+    (fs4)
+    (fs5)
+    (fs6)
+    (fs7)
+    (fs8)
+    (fs9)
+    (fs10)
+    ))
+
+(tf)
+
+
 ;;; -------- => --------
 (define-constant (f1)
   (cond (-2 => abs)))
@@ -179,11 +250,11 @@
 (define (mv8)
   (+ (values 1 2 3) (values 3 -2 -1)))
 (define (mv9)
-  (+ (abs -1) (values 2 3 4) -4))
+  (+ 1 (values 2 3 4) -4))
 (define (mv10)
   (+ (values 1 2 3)))
 (define (mv11)
-  (+ (abs -1) (values -1 2 4)))
+  (+ 1 (values -1 2 4)))
 (define (mv12 x y)
   (+ x y (values 2 3 4)))
 
@@ -313,22 +384,24 @@
 
 ;;; -------- methods --------
 
-(define (m5)
-  (let ((L (openlet (inlet :length (lambda (str) (+ 2 (#_string-length "asdfghjklijk")))))))
-    (do ((i 0 (+ i 1)))
-	((= i 1000000) (length L))
-      (length L))))
+(unless (provided? 'pure-s7)
 
-(unless (eqv? (m5) 14) (format *stderr* "m5: ~S~%" (m5)))
-
-(define (m6)
-  (let ((L (openlet (inlet :length (lambda (str) (+ 2 (#_string-length str)))))))
-    (do ((i 0 (+ i 1)))
-	((= i 1000000) (with-let L (length "asdfghjklijk")))
-      (with-let L
-	(length "asdfghjklijk")))))
-
-(unless (eqv? (m6) 14) (format *stderr* "m6: ~S~%" (m6)))
+  (define (m5 str)
+    (let ((L (openlet (inlet :length (lambda (s) (+ 2 (#_string-length str)))))))
+      (do ((i 0 (+ i 1)))
+	  ((= i 1000000) (length L))
+	(length L))))
+  
+  (unless (eqv? (m5 "asdfghjklijk") 14) (format *stderr* "m5: ~S~%" (m5 "asdfghjklijk")))
+  
+  (define (m6 str)
+    (let ((L (openlet (inlet :str str :length (lambda (s) (+ 2 (#_string-length s)))))))
+      (do ((i 0 (+ i 1)))
+	  ((= i 1000000) (with-let L (length str)))
+	(with-let L
+	  (length str)))))
+  
+  (unless (eqv? (m6 "asdfghjklijk") 14) (format *stderr* "m6: ~S~%" (m6 "asdfghjklijk"))))
 
 (define (m7)
   (let ((L (openlet (inlet :+ (lambda (x y) (#_+ x y 1))))))

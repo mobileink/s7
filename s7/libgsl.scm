@@ -66,6 +66,7 @@
       (define gsl_min min)
       
       (set! *libraries* (cons (cons "libgsl.scm" (curlet)) *libraries*))
+      (set! *cload-library-name* "*libgsl*")
 
       (c-define 
        '((C-macro (double (GSL_CONST_CGS_SPEED_OF_LIGHT GSL_CONST_CGS_GRAVITATIONAL_CONSTANT GSL_CONST_CGS_PLANCKS_CONSTANT_H 
@@ -203,7 +204,8 @@
 	   
 	   
 	 ;; redirect GSL errors to s7_error
-	 (in-C "static s7_scheme *gsl_error_s7;
+	 (in-C "
+                static s7_scheme *gsl_error_s7;
                 static void g_gsl_error(const char *reason, const char *file, int line, int gsl_errno)
                 { 
                   s7_error(gsl_error_s7, s7_make_symbol(gsl_error_s7, \"gsl-error\"),
@@ -790,7 +792,8 @@
 	 (int gsl_sf_eta_e (double gsl_sf_result*))
 	 (double gsl_sf_eta (double))
 	 
-	 (in-C "static s7_pointer g_gsl_sf_result_make(s7_scheme *sc, s7_pointer args)
+	 (in-C "
+                static s7_pointer g_gsl_sf_result_make(s7_scheme *sc, s7_pointer args)
                 {
                   return(s7_make_c_pointer_with_type(sc, (void *)calloc(1, sizeof(gsl_sf_result)), gsl_sf_result__symbol, s7_f(sc)));
                 }
@@ -837,7 +840,8 @@
 	 (double gsl_coerce_double (double))
 	 (double gsl_ldexp (double int))
 	 
-	 (in-C "static s7_pointer g_gsl_frexp(s7_scheme *sc, s7_pointer args)
+	 (in-C "
+                static s7_pointer g_gsl_frexp(s7_scheme *sc, s7_pointer args)
                 {
                   int e = 0;
                   double res;
@@ -1237,7 +1241,7 @@
                 static s7_pointer s7_gsl_r_c(s7_scheme *sc, s7_pointer arg1, gsl_complex (*callee)(double a))
                 {
                   gsl_complex g;
-                  g = callee(s7_number_to_real(sc, arg1));
+                  g = callee(s7_number_to_real_with_caller(sc, arg1, __func__));
                   return(GSL_TO_S7_COMPLEX(sc, g));
                 }
                 static s7_pointer s7_gsl_c_r(s7_scheme *sc, s7_pointer arg1, double (*callee)(gsl_complex a))
@@ -1258,7 +1262,7 @@
                 {
                   gsl_complex g, g1;
                   S7_TO_GSL_COMPLEX(arg1, g1);
-                  g = callee(g1, s7_number_to_real(sc, arg2));
+                  g = callee(g1, s7_number_to_real_with_caller(sc, arg2, __func__));
                   return(GSL_TO_S7_COMPLEX(sc, g));
                 }
                 static s7_pointer g_gsl_complex_arg(s7_scheme *sc, s7_pointer args) {return(s7_gsl_c_r(sc, s7_car(args), gsl_complex_arg));}
@@ -1399,7 +1403,8 @@
 	 (int gsl_cheb_calc_integ (gsl_cheb_series* gsl_cheb_series*))
 	 
 	 ;; gsl_function is a struct with double function(double void*) and void* params
-	 (in-C "static s7_scheme *gsl_f_s7;
+	 (in-C "
+                static s7_scheme *gsl_f_s7;
                 static gsl_function gsl_f;
                 static double gsl_f_caller(double x, void *p) 
                 {
@@ -1500,7 +1505,8 @@
 	 (void gsl_poly_complex_workspace_free (gsl_poly_complex_workspace*))
 	 (gsl_poly_complex_workspace* gsl_poly_complex_workspace_alloc (size_t))
 	 
-	 (in-C "static s7_pointer g_gsl_poly_complex_eval(s7_scheme *sc, s7_pointer args)
+	 (in-C "
+                static s7_pointer g_gsl_poly_complex_eval(s7_scheme *sc, s7_pointer args)
                 {
                   gsl_complex z, rz;
                   S7_TO_GSL_COMPLEX(s7_caddr(args), z);
@@ -1530,8 +1536,9 @@
                   s7_pointer res;
                 
                   res = s7_cadddr(args);
-                  result = gsl_poly_complex_solve_quadratic(s7_number_to_real(sc, s7_car(args)), s7_number_to_real(sc, s7_cadr(args)), 
-                                                            s7_number_to_real(sc, s7_caddr(args)), &z0, &z1);
+                  result = gsl_poly_complex_solve_quadratic(s7_number_to_real_with_caller(sc, s7_car(args), __func__), 
+                                                            s7_number_to_real_with_caller(sc, s7_cadr(args), __func__), 
+                                                            s7_number_to_real_with_caller(sc, s7_caddr(args), __func__), &z0, &z1);
                   s7_vector_set(sc, res, 0, GSL_TO_S7_COMPLEX(sc, z0));
                   s7_vector_set(sc, res, 1, GSL_TO_S7_COMPLEX(sc, z1));
                 
@@ -1544,8 +1551,9 @@
                   int result;
                   s7_pointer res;
                 
-                  result = gsl_poly_complex_solve_cubic(s7_number_to_real(sc, s7_car(args)), s7_number_to_real(sc, s7_cadr(args)), 
-                                                        s7_number_to_real(sc, s7_caddr(args)), &z0, &z1, &z2);
+                  result = gsl_poly_complex_solve_cubic(s7_number_to_real_with_caller(sc, s7_car(args), __func__), 
+                                                        s7_number_to_real_with_caller(sc, s7_cadr(args), __func__), 
+                                                        s7_number_to_real_with_caller(sc, s7_caddr(args), __func__), &z0, &z1, &z2);
                   res = s7_cadddr(args);
                   s7_vector_set(sc, res, 0, GSL_TO_S7_COMPLEX(sc, z0));
                   s7_vector_set(sc, res, 1, GSL_TO_S7_COMPLEX(sc, z1));
@@ -1583,8 +1591,9 @@
                   int result;
                   double *res;
                   res = (double *)s7_c_pointer_with_type(sc, s7_cadddr(args), double__symbol, __func__, 4);
-                  result = gsl_poly_solve_quadratic(s7_number_to_real(sc, s7_car(args)), s7_number_to_real(sc, s7_cadr(args)), 
-                                                    s7_number_to_real(sc, s7_caddr(args)), &x0, &x1);
+                  result = gsl_poly_solve_quadratic(s7_number_to_real_with_caller(sc, s7_car(args), __func__), 
+                                                    s7_number_to_real_with_caller(sc, s7_cadr(args), __func__), 
+                                                    s7_number_to_real_with_caller(sc, s7_caddr(args), __func__), &x0, &x1);
                   res[0] = x0;
                   res[1] = x1;
                   return(s7_make_integer(sc, result));
@@ -1596,8 +1605,9 @@
                   int result;
                   double *res;
                   res = (double *)s7_c_pointer_with_type(sc, s7_cadddr(args), double__symbol, __func__, 4);
-                  result = gsl_poly_solve_cubic(s7_number_to_real(sc, s7_car(args)), s7_number_to_real(sc, s7_cadr(args)), 
-                                                s7_number_to_real(sc, s7_caddr(args)), &x0, &x1, &x2);
+                  result = gsl_poly_solve_cubic(s7_number_to_real_with_caller(sc, s7_car(args), __func__), 
+                                                s7_number_to_real_with_caller(sc, s7_cadr(args), __func__), 
+                                                s7_number_to_real_with_caller(sc, s7_caddr(args), __func__), &x0, &x1, &x2);
                   res[0] = x0;
                   res[1] = x1;
                   res[2] = x2;
@@ -1614,7 +1624,8 @@
 	 (C-function ("gsl_poly_solve_cubic" g_gsl_poly_solve_cubic "" 4))
 	 
 	 ;; vector
-	 (in-C "static s7_pointer g_float_vector_to_gsl_vector(s7_scheme *sc, s7_pointer args)
+	 (in-C "
+                static s7_pointer g_float_vector_to_gsl_vector(s7_scheme *sc, s7_pointer args)
                 {
                    gsl_vector *g;
                    int size;
@@ -1678,7 +1689,8 @@
 	 (void gsl_vector_minmax_index (gsl_vector* size_t* size_t*)) ; by ref 
 	 
 	 ;; matrix
-	 (in-C "static s7_pointer g_float_vector_to_gsl_matrix(s7_scheme *sc, s7_pointer args)
+	 (in-C "
+                static s7_pointer g_float_vector_to_gsl_matrix(s7_scheme *sc, s7_pointer args)
                 {
                    gsl_matrix *g;
                    int size;
@@ -1750,7 +1762,8 @@
 	 (void gsl_matrix_set (gsl_matrix* size_t size_t double))
 	 (double* gsl_matrix_ptr (gsl_matrix* size_t size_t))
 	 (double* gsl_matrix_const_ptr (gsl_matrix* size_t size_t))
-	 (in-C "static s7_pointer g_gsl_matrix_size(s7_scheme *sc, s7_pointer args)
+	 (in-C "
+                static s7_pointer g_gsl_matrix_size(s7_scheme *sc, s7_pointer args)
                 {
                   gsl_matrix *g; g = (gsl_matrix *)s7_c_pointer_with_type(sc, s7_car(args), gsl_matrix__symbol, __func__, 1);
                   return(s7_cons(sc, s7_make_integer(sc, (s7_int)(g->size1)), s7_make_integer(sc, (s7_int)(g->size2))));
@@ -1884,7 +1897,8 @@
 	 (int gsl_combination_next (gsl_combination*))
 	 (int gsl_combination_prev (gsl_combination*))
 	 (size_t gsl_combination_get (gsl_combination* size_t))
-	 (in-C "static s7_pointer g_gsl_combination_to_int_vector(s7_scheme *sc, s7_pointer args)
+	 (in-C "
+                static s7_pointer g_gsl_combination_to_int_vector(s7_scheme *sc, s7_pointer args)
                 {
                    gsl_combination *g;
                    int i, size;
@@ -1991,7 +2005,8 @@
 	 (int gsl_schur_solve_equation (double gsl_matrix* double double double gsl_vector* gsl_vector* double* double* double))
 	 (int gsl_schur_solve_equation_z (double gsl_matrix* gsl_complex* double double gsl_vector_complex* gsl_vector_complex* double* double* double))
 	 (int gsl_eigen_invert_jacobi (gsl_matrix* gsl_matrix* int))
-	 (in-C "static s7_pointer g_gsl_eigen_jacobi(s7_scheme *sc, s7_pointer args)
+	 (in-C "
+                static s7_pointer g_gsl_eigen_jacobi(s7_scheme *sc, s7_pointer args)
                 {
                   unsigned int ref_arg = 0;
                   return(s7_make_integer(sc, (s7_int)gsl_eigen_jacobi((gsl_matrix*)s7_c_pointer_with_type(sc, s7_car(args), gsl_matrix__symbol, __func__, 1), (gsl_vector*)s7_c_pointer_with_type(sc, s7_cadr(args), gsl_vector__symbol, __func__, 2),
@@ -2108,7 +2123,8 @@
 					;(int gsl_ieee_read_mode_string (char* int* int* int*) ) ; int by ref
 	 (int gsl_ieee_set_mode (int int int) )
 	 
-	 (in-C "static s7_pointer g_gsl_deriv_central(s7_scheme *sc, s7_pointer args)
+	 (in-C "
+                static s7_pointer g_gsl_deriv_central(s7_scheme *sc, s7_pointer args)
                 {
                   gsl_function gsl_f;
                   make_gsl_function(s7_car(args));
@@ -2178,7 +2194,8 @@
 	 (C-function ("gsl_integration_qk61" g_gsl_integration_qk61 "" 7))
 
 	 (reader-cond ((>= gsl-version 2.5)
-		       (in-C "static s7_pointer g_gsl_integration_romberg(s7_scheme *sc, s7_pointer args)
+		       (in-C "
+                static s7_pointer g_gsl_integration_romberg(s7_scheme *sc, s7_pointer args)
                               {
                                 gsl_function gsl_f; make_gsl_function(s7_car(args));
                                 gsl_integration_romberg(&gsl_f, 
@@ -2192,7 +2209,8 @@
 		       (C-function ("gsl_integration_romberg" g_gsl_integration_romberg "" 8))))
 
 
-	 (in-C "static s7_pointer g_gsl_integration_qcheb(s7_scheme *sc, s7_pointer args)
+	 (in-C "
+                static s7_pointer g_gsl_integration_qcheb(s7_scheme *sc, s7_pointer args)
                 {
                   gsl_function gsl_f; make_gsl_function(s7_car(args));
                   gsl_integration_qcheb(&gsl_f, s7_real(s7_cadr(args)), s7_real(s7_caddr(args)),
@@ -2376,7 +2394,8 @@
 	 (int gsl_linalg_householder_hv (double gsl_vector* gsl_vector*))
 	 (int gsl_linalg_householder_hm1 (double gsl_matrix*))
 	 
-	 (in-C "static s7_pointer g_gsl_linalg_complex_householder_transform(s7_scheme *sc, s7_pointer args)
+	 (in-C "
+                static s7_pointer g_gsl_linalg_complex_householder_transform(s7_scheme *sc, s7_pointer args)
                 {
                   gsl_complex g;
                   g = gsl_linalg_complex_householder_transform((gsl_vector_complex *)s7_c_pointer_with_type(sc, s7_car(args), gsl_vector_complex__symbol, __func__, 1));
@@ -2403,7 +2422,7 @@
                 }
                 ")
 	 (C-function ("gsl_linalg_complex_householder_transform" g_gsl_linalg_complex_householder_transform "" 1))
-	 ;(C-function ("gsl_linalg_complex_householder_hm" g_gsl_linalg_complex_householder_hm "" 3))
+	 ;(C-function ("gsl_linalg_complex_householder_hm" g_gsl_linalg_complex_householder_hm "" 3)) ; deprecated 2.6
 	 ;(C-function ("gsl_linalg_complex_householder_mh" g_gsl_linalg_complex_householder_mh "" 3))
 	 (C-function ("gsl_linalg_complex_householder_hv" g_gsl_linalg_complex_householder_hv "" 3))
 	 (C-function ("gsl_linalg_complex_LU_det" g_gsl_linalg_complex_LU_det "" 2))
@@ -2421,7 +2440,8 @@
 	 (int gsl_linalg_SV_decomp_jacobi (gsl_matrix* gsl_matrix* gsl_vector*))
 	 (int gsl_linalg_SV_solve (gsl_matrix* gsl_matrix* gsl_vector* gsl_vector* gsl_vector*))
 	 (reader-cond ((>= gsl-version 1.16) (int gsl_linalg_SV_leverage (gsl_matrix* gsl_vector*))))
-	 (in-C "static s7_pointer g_gsl_linalg_LU_decomp(s7_scheme *sc, s7_pointer args)
+	 (in-C "
+                static s7_pointer g_gsl_linalg_LU_decomp(s7_scheme *sc, s7_pointer args)
                 {
                   int s = 0;
                   return(s7_make_integer(sc, (s7_int)gsl_linalg_LU_decomp((gsl_matrix *)s7_c_pointer_with_type(sc, s7_car(args), gsl_matrix__symbol, __func__, 1),
@@ -2435,7 +2455,8 @@
 	 (double gsl_linalg_LU_det (gsl_matrix* int))
 	 (double gsl_linalg_LU_lndet (gsl_matrix*))
 	 (int gsl_linalg_LU_sgndet (gsl_matrix* int))
-	 (in-C "static s7_pointer g_gsl_linalg_complex_LU_decomp(s7_scheme *sc, s7_pointer args)
+	 (in-C "
+                static s7_pointer g_gsl_linalg_complex_LU_decomp(s7_scheme *sc, s7_pointer args)
                 {
                   int s = 0;
                   return(s7_make_integer(sc, (s7_int)gsl_linalg_complex_LU_decomp((gsl_matrix_complex *)s7_c_pointer_with_type(sc, s7_car(args), gsl_matrix_complex__symbol, __func__, 1),
@@ -2465,7 +2486,8 @@
 	 (int gsl_linalg_QR_unpack (gsl_matrix* gsl_vector* gsl_matrix* gsl_matrix*))
 	 (int gsl_linalg_R_solve (gsl_matrix* gsl_vector* gsl_vector*))
 	 (int gsl_linalg_R_svx (gsl_matrix* gsl_vector*))
-	 (in-C "static s7_pointer g_gsl_linalg_QRPT_decomp(s7_scheme *sc, s7_pointer args)
+	 (in-C "
+                static s7_pointer g_gsl_linalg_QRPT_decomp(s7_scheme *sc, s7_pointer args)
                 {
                   int s = 0;
                   return(s7_make_integer(sc, (s7_int)gsl_linalg_QRPT_decomp(
@@ -2475,7 +2497,8 @@
                                              (gsl_vector *)s7_c_pointer_with_type(sc, s7_cadddr(args), gsl_vector__symbol, __func__, 4))));
                 }")
 	 (C-function ("gsl_linalg_QRPT_decomp" g_gsl_linalg_QRPT_decomp "" 4))
-	 (in-C "static s7_pointer g_gsl_linalg_QRPT_decomp2(s7_scheme *sc, s7_pointer args)
+	 (in-C "
+                static s7_pointer g_gsl_linalg_QRPT_decomp2(s7_scheme *sc, s7_pointer args)
                 {
                   int s = 0;
                   return(s7_make_integer(sc, (s7_int)gsl_linalg_QRPT_decomp2(
@@ -2506,7 +2529,8 @@
 	 (int gsl_linalg_LQ_unpack (gsl_matrix* gsl_vector* gsl_matrix* gsl_matrix*))
 	 (int gsl_linalg_LQ_update (gsl_matrix* gsl_matrix* gsl_vector* gsl_vector*))
 	 (int gsl_linalg_LQ_LQsolve (gsl_matrix* gsl_matrix* gsl_vector* gsl_vector*))
-	 (in-C "static s7_pointer g_gsl_linalg_PTLQ_decomp(s7_scheme *sc, s7_pointer args)
+	 (in-C "
+                static s7_pointer g_gsl_linalg_PTLQ_decomp(s7_scheme *sc, s7_pointer args)
                 {
                   int s = 0;
                   return(s7_make_integer(sc, (s7_int)gsl_linalg_PTLQ_decomp(
@@ -2517,7 +2541,8 @@
                                              (gsl_vector *)s7_c_pointer_with_type(sc, s7_cadddr(args), gsl_vector__symbol, __func__, 4))));
                 }")
 	 (C-function ("gsl_linalg_PTLQ_decomp" g_gsl_linalg_PTLQ_decomp "" 4))
-	 (in-C "static s7_pointer g_gsl_linalg_PTLQ_decomp2(s7_scheme *sc, s7_pointer args)
+	 (in-C "
+                static s7_pointer g_gsl_linalg_PTLQ_decomp2(s7_scheme *sc, s7_pointer args)
                 {
                   int s = 0;
                   return(s7_make_integer(sc, (s7_int)gsl_linalg_PTLQ_decomp2(
@@ -2608,7 +2633,8 @@
 	 (int gsl_matrix_complex_mul_elements (gsl_matrix_complex* gsl_matrix_complex*))
 	 (int gsl_matrix_complex_div_elements (gsl_matrix_complex* gsl_matrix_complex*))
 	 
-	 (in-C "static s7_pointer g_gsl_matrix_complex_set_all(s7_scheme *sc, s7_pointer args)
+	 (in-C "
+                static s7_pointer g_gsl_matrix_complex_set_all(s7_scheme *sc, s7_pointer args)
                 {
                   gsl_complex g;
                   S7_TO_GSL_COMPLEX(s7_cadr(args), g);
@@ -2807,7 +2833,8 @@
 	 (int gsl_multimin_test_size (double double))
 	 
 	 ;; multimin_function is double f(gsl_vector* void*) -- so we can handle it (but not the fdf brand)
-	 (in-C "static s7_scheme *gsl_mmf_s7;
+	 (in-C "
+                static s7_scheme *gsl_mmf_s7;
                 static gsl_multimin_function gsl_mmf;
                 static double gsl_mmf_caller(const gsl_vector *x, void *p) 
                 {
@@ -2838,7 +2865,8 @@
 	 
 	 
 	 ;; int f(const gsl_vector* void* gsl_vector*) so the function is doable
-	 (in-C "static s7_scheme *gsl_rf_s7;
+	 (in-C "
+                static s7_scheme *gsl_rf_s7;
                 static gsl_multiroot_function gsl_rf;
                 static int gsl_rf_caller(const gsl_vector *x, void *p, gsl_vector *y) 
                 {
@@ -3086,6 +3114,55 @@
 		       (int gsl_spline2d_set (gsl_spline2d* double* size_t size_t double))
 		       (double gsl_spline2d_get (gsl_spline2d* double* size_t size_t))
 		       ))
+
+	 (reader-cond ((>= gsl-version 2.7)
+		       (double gsl_vector_sum (gsl_vector*))
+		       (double gsl_matrix_norm1 (gsl_matrix*))
+		       (int gsl_matrix_scale_rows (gsl_matrix* gsl_vector*))
+		       (int gsl_matrix_scale_columns (gsl_matrix* gsl_vector*))
+		       (int gsl_spmatrix_dense_add (gsl_matrix* gsl_spmatrix*))
+		       (int gsl_spmatrix_dense_sub (gsl_matrix* gsl_spmatrix*))
+		       (double gsl_spmatrix_norm1 (gsl_spmatrix*))
+		       (int gsl_linalg_QL_decomp (gsl_matrix* gsl_vector*))
+		       (int gsl_linalg_QL_unpack (gsl_matrix* gsl_vector* gsl_matrix* gsl_matrix*))
+		       (int gsl_linalg_complex_QR_decomp (gsl_matrix_complex* gsl_vector_complex*))
+		       (int gsl_linalg_complex_QR_decomp_r (gsl_matrix_complex* gsl_matrix_complex*))
+		       (int gsl_linalg_complex_QR_solve (gsl_matrix_complex* gsl_vector_complex* gsl_vector_complex* gsl_vector_complex*))
+		       (int gsl_linalg_complex_QR_solve_r (gsl_matrix_complex* gsl_matrix_complex* gsl_vector_complex* gsl_vector_complex*))
+		       (int gsl_linalg_complex_QR_svx (gsl_matrix_complex* gsl_vector_complex* gsl_vector_complex*))
+		       (int gsl_linalg_complex_QR_lssolve (gsl_matrix_complex* gsl_vector_complex* gsl_vector_complex* gsl_vector_complex* gsl_vector_complex*))
+		       (int gsl_linalg_complex_QR_lssolve_r (gsl_matrix_complex* gsl_matrix_complex* gsl_vector_complex* gsl_vector_complex* gsl_vector_complex*))
+		       (int gsl_linalg_complex_QR_QHvec (gsl_matrix_complex* gsl_vector_complex* gsl_vector_complex*))
+		       (int gsl_linalg_complex_QR_QHvec_r(gsl_matrix_complex* gsl_matrix_complex* gsl_vector_complex* gsl_vector_complex*))
+		       (int gsl_linalg_complex_QR_Qvec (gsl_matrix_complex* gsl_vector_complex* gsl_vector_complex*))
+		       (int gsl_linalg_complex_QR_unpack (gsl_matrix_complex* gsl_vector_complex* gsl_matrix_complex* gsl_matrix_complex*))
+		       (int gsl_linalg_complex_QR_unpack_r(gsl_matrix_complex* gsl_matrix_complex* gsl_matrix_complex* gsl_matrix_complex*))
+		       (int gsl_linalg_cholesky_band_decomp(gsl_matrix*))
+		       (int gsl_linalg_cholesky_band_solve (gsl_matrix* gsl_vector* gsl_vector*))
+		       (int gsl_linalg_cholesky_band_svx (gsl_matrix* gsl_vector*))
+		       (int gsl_linalg_cholesky_band_solvem (gsl_matrix* gsl_matrix* gsl_matrix*))
+		       (int gsl_linalg_cholesky_band_svxm (gsl_matrix* gsl_matrix*))
+		       (int gsl_linalg_cholesky_band_invert (gsl_matrix* gsl_matrix*))
+		       (int gsl_linalg_cholesky_band_unpack (gsl_matrix* gsl_matrix*))
+		       (int gsl_linalg_cholesky_band_scale(gsl_matrix* gsl_vector*))
+		       (int gsl_linalg_cholesky_band_scale_apply(gsl_matrix* gsl_vector*))
+		       (int gsl_linalg_cholesky_band_rcond (gsl_matrix* double* gsl_vector*))
+		       ))
+
+	 ;; some 2.8 functions
+	 ;;    (gsl_matrix_complex_conjugate (gsl_matrix_complex*))
+	 ;;    (int gsl_linalg_QR_lssolvem_r (gsl_matrix* gsl_matrix* gsl_matrix* gsl_matrix* gsl_matrix*))
+	 ;;    (int gsl_linalg_complex_QR_QHmat_r(gsl_matrix_complex* gsl_matrix_complex* gsl_matrix_complex* gsl_matrix_complex*))
+	 ;;    (int gsl_linalg_complex_QR_lssolvem_r (gsl_matrix_complex* gsl_matrix_complex* gsl_matrix_complex* gsl_matrix_complex* gsl_matrix_complex*))
+	 ;;    (int gsl_linalg_complex_cholesky_scale(gsl_matrix_complex* gsl_vector*))
+	 ;;    (int gsl_linalg_complex_cholesky_scale_apply(gsl_matrix_complex* gsl_vector*))
+	 ;;    (int gsl_linalg_complex_cholesky_decomp2(gsl_matrix_complex* gsl_vector*))
+	 ;;    (int gsl_linalg_complex_cholesky_svx2 (gsl_matrix_complex* gsl_vector* gsl_vector_complex*))
+	 ;;    (int gsl_linalg_complex_cholesky_solve2 (gsl_matrix_complex* gsl_vector* gsl_vector_complex* gsl_vector_complex*))
+	 ;;    (int gsl_linalg_cholesky_decomp2(gsl_matrix* gsl_vector*))
+	 ;;    (int gsl_linalg_cholesky_svx2 (gsl_matrix* gsl_vector* gsl_vector*))
+	 ;;    (int gsl_linalg_cholesky_solve2 (gsl_matrix* gsl_vector* gsl_vector* gsl_vector*))
+	 
 	 )
        "" (list "gsl/gsl_blas.h"
 		"gsl/gsl_blas_types.h"

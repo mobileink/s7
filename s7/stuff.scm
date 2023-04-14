@@ -108,10 +108,15 @@
 	       vals)
      ,@(map (lambda (val)
 	      (if (pair? (cddr val))
-		  `(set! (setter ',(car val))
-			 (if (not (,(caddr val) ,(car val))) ; check initial value (already set)
-			     (error 'wrong-type "initial value ~S is not ~S" ,(car val) ,(caddr val))
-			     ,(caddr val)))                  ; assume built-in type here
+		  (let ((init-args (if (pair? (caddr val)) ; setter: (lambda (s v [e]) ...)
+				       (if (eqv? (length (cadr (caddr val))) 3)
+					   (list (list 'quote (car val)) (car val) (list 'curlet))
+					   (list (list 'quote (car val)) (car val)))
+				       (list (car val))))) ; setter: integer? etc
+		    `(begin
+		       (unless (,(caddr val) ,@init-args) ; check initial value (already set)
+			 (error 'wrong-type "typed-let: '~S initial value ~S is not ~S" ',(car val) ,(car val) ,(caddr val)))
+		       (set! (setter ',(car val)) ,(caddr val))))
 		  (values)))
 	    vals)
      ,@body))
@@ -150,10 +155,11 @@
     (if (and (procedure? bp)
 	     (signature bp)
 	     (eq? 'boolean? (car (signature bp))))
-	(if (type e)
-	    e
-	    (error 'bad-type "~S is ~S but should be ~S" e (type-of e) bp))
-	(error 'bad-type "~S is not a boolean procedure" bp))))
+	(let ((result (if (= (car (arity bp)) 1)
+			  (type e)
+			  (bp 'the e))))
+	  (if result e (error 'bad-type "~S is ~S but should be ~S in (the ~S ~S)" e (type-of e) bp type expr)))
+	(error 'bad-type "~S is not a boolean procedure, (the ~S ~S)" bp type expr))))
 
 (define iota
   (let ((+documentation+ "(iota n (start 0) (incr 1)) returns a list counting from start for n:\n\
@@ -207,7 +213,6 @@
     (lambda (obj)
       (pair? (cyclic-sequences obj)))))
 
-
 (define copy-tree
   (let ((+documentation+ "(copy-tree lst) returns a full copy of lst"))
     (lambda (lis)
@@ -243,21 +248,21 @@
 
 ;;; ----------------
 (define-macro (fully-macroexpand form)
-  (define (expand form)
-    (if (pair? form)
-	(if (and (symbol? (car form))
-		 (macro? (symbol->value (car form))))
-	    (expand (apply macroexpand (list form)))
-	    (if (and (eq? (car form) 'set!)
-		     (pair? (cdr form))
-		     (pair? (cadr form))
-		     (macro? (symbol->value (caadr form))))
-		(expand (apply macroexpand (list (cons (setter (symbol->value (caadr form)))
-						       (append (cdadr form) (copy (cddr form)))))))
-		(cons (expand (car form))
-		      (expand (cdr form)))))
-	form))
-  (list 'quote (expand form)))
+  (list 'quote
+        (let expand ((form form))
+          (cond ((not (pair? form)) form)
+                ((and (symbol? (car form))
+                      (macro? (symbol->value (car form))))
+                 (expand (apply macroexpand (list form))))
+                ((and (eq? (car form) 'set!)
+                      (pair? (cdr form))
+                      (pair? (cadr form))
+                      (macro? (symbol->value (caadr form))))
+                 (expand
+                  (apply macroexpand
+                         (list (cons (setter (symbol->value (caadr form)))
+                               (append (cdadr form) (copy (cddr form))))))))
+                (else (cons (expand (car form)) (expand (cdr form))))))))
 
 (define-macro (define-with-macros name&args . body)
   `(apply define ',name&args (list (fully-macroexpand `(begin ,,@body)))))
@@ -869,7 +874,7 @@ Unlike full-find-if, safe-find-if can handle any circularity in the sequences.")
 (define 2^n?
   (let ((+documentation+ "(2^n? x) returns #t if x is a power of 2"))
     (lambda (x)
-      (and (integer> x)
+      (and (integer? x)
 	   (not (zero? x))
 	   (zero? (logand x (- x 1)))))))
 
@@ -979,37 +984,38 @@ Unlike full-find-if, safe-find-if can handle any circularity in the sequences.")
 				 (cons (car slot) (cadr slot))
 				 (cons slot #f)))
 			   ,slots)                    ; the incoming new slots, #f is the default value
-		      new-slots))))                   ; the inherited slots
+		      new-slots)))                    ; the inherited slots
 
-     (set! new-methods
-	   (append (map (lambda (method)
-			  (if (pair? method)
-			      (cons (car method) (cadr method))
-			      (cons method #f)))
-			,methods)                     ; the incoming new methods
-
-		   ;; add an object->string method for this class (this is already a generic function).
-		   (list (cons 'object->string
-			       (lambda (obj . rest)
-				 (if (and (pair? rest)
-					  (eq? (car rest) :readable))    ; write readably
-				     (format #f "(make-~A~{ :~A ~W~^~})"
-					     ',class-name
-					     (map (lambda (slot)
-						    (values (car slot) (cdr slot)))
-						  obj))
-				     (format #f "#<~A: ~{~A~^ ~}>"
-					     ',class-name
-					     (map (lambda (slot)
-						    (list (car slot) (cdr slot)))
-						  obj))))))
-		   (reverse! new-methods)))                      ; the inherited methods, shadowed automatically
+       (set! new-methods
+	     (remove-duplicates
+	      (append (map (lambda (method)
+			     (if (pair? method)
+				 (cons (car method) (cadr method))
+				 (cons method #f)))
+			   ,methods)                     ; the incoming new methods
+		      
+		      ;; add an object->string method for this class (this is already a generic function).
+		      (list (cons 'object->string
+				  (lambda (obj . rest)
+				    (if (and (pair? rest)
+					     (eq? (car rest) :readable))    ; write readably
+					(format #f "(make-~A~{ :~A ~W~^~})"
+						',class-name
+						(map (lambda (slot)
+						       (values (car slot) (cdr slot)))
+						     obj))
+					(format #f "#<~A: ~{~A~^ ~}>"
+						',class-name
+						(map (lambda (slot)
+						       (list (car slot) (cdr slot)))
+						     obj))))))
+		      (reverse! new-methods)))))                  ; the inherited methods, shadowed automatically
 
      (let ((new-class (openlet
                        (apply sublet                             ; the local slots
 			      (sublet                            ; the global slots
 				  (apply inlet                   ; the methods
-					 (reverse new-methods))
+					 new-methods)
 				'class-name ',class-name         ; class-name slot
 				'inherited ,inherited-classes
 				'inheritors ())                  ; classes that inherit from this class
@@ -1348,13 +1354,6 @@ Unlike full-find-if, safe-find-if can handle any circularity in the sequences.")
 
 ;;; ----------------
 
-(define-macro (catch* clauses . error)
-  (let builder ((lst clauses))
-    (if (null? lst)
-	(apply values error)
-	`(catch #t (lambda () ,(car lst)) (lambda args ,(builder (cdr lst)))))))
-
-
 (define* (subsequence obj (start 0) end)
   (let ((new-len (let ((len (length obj)))
 		   (- (min len (or end len)) start))))
@@ -1370,9 +1369,11 @@ Unlike full-find-if, safe-find-if can handle any circularity in the sequences.")
                (substring obj start)))
 
           ((not (pair? obj))
-           (catch* (((obj 'subsequence) obj start end)
-		    (subsequence (obj 'value) start end))
-		   #f))
+           (if (defined? 'value obj #t)
+	       (subsequence (obj 'value) start end)
+	       (if (defined? 'subsequence obj #t)
+		   ((obj 'subsequence) obj start end)
+		   #f)))
 
           ((not end)
 	   (list-tail obj start))
@@ -1543,6 +1544,42 @@ Unlike full-find-if, safe-find-if can handle any circularity in the sequences.")
 
 
 ;;; --------------------------------------------------------------------------------
+;;;
+#|
+;;; other make-hook possibilities.  Here is the original:
+
+(define make-hook
+  (let ((+documentation+ "(make-hook . pars) returns a new hook (a function) that passes the parameters to its function list."))
+    (lambda hook-args
+      (let ((body ()))
+        (apply lambda* hook-args
+               (copy '(let ((result #<unspecified>))
+                        (let ((hook (curlet)))
+                          (for-each (lambda (hook-function) (hook-function hook)) body)
+                          result))
+                     :readable)
+	       ())))))
+
+;;; but hooks need an indication that a name passed as an argument is not a parameter name even when it is defined (in rootlet for example)
+;;;   (define h (make-hook 'x)) (set! (hook-functions h) (list (lambda (hk) (set! (hk 'result) (hk 'abs))))) (h 123) -> abs
+;;; but the current s7.c version is much faster than using copy, and surely copy isn't needed here; the current version returns #<undefined> for anything that 
+;;;  would otherwise be found in rootlet, but ideally we wouldn't have to create a new let, load up the fallback etc -- 
+;;;  maybe add a flag on the let (blocked?) or notice let-ref-fallback in lets (as opposed to sublet), then it could be in the let with result.
+
+;;; here is a macro make-hook:
+
+(define-macro (make-hook . hook-args)
+  `(let ((body ()))
+     (lambda* ,(map (lambda (p) (if (pair? p) (cadr p) (if (keyword? p) p (error 'wrong-type-arg "make-hook arg ~S?" p)))) hook-args)
+       (let ((result #<unspecified>))
+         (let ((hook (openlet (sublet (curlet) 'let-ref-fallback (lambda (e sym) #<undefined>)))))
+           (for-each (lambda (hook-function) (hook-function hook)) body)
+           result)))))
+
+;;; but this is much slower than the current apply lambda* version
+|#
+
+;;; --------------------------------------------------------------------------------
 
 (define null-environment
   (let ((e #f))
@@ -1560,7 +1597,8 @@ Unlike full-find-if, safe-find-if can handle any circularity in the sequences.")
 ;;; (sandbox '(let ((x 1)) (+ x 2))) -> 3
 ;;; (sandbox '(let ((x 1)) (+ x 2) (exit))) -> #f
 
-;; perhaps tgsl's (immutable-let (rootlet))? 
+;;; perhaps tgsl's (immutable-let (rootlet))? 
+;;; perhaps use the blocking let?
 
 (define sandbox
   (let ((+documentation+ "(sandbox code) evaluates code in an environment where nothing outside that code can be affected by its evaluation.")
@@ -1702,3 +1740,4 @@ Unlike full-find-if, safe-find-if can handle any circularity in the sequences.")
 				 (apply format #f (cadr args)))
 			       (lambda args
 				 (copy "?")))))))))))))
+

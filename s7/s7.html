@@ -111,8 +111,7 @@
 </div>
 
 
-<p>s7 is a Scheme implementation intended as an extension language
-for other applications, primarily Snd, Radium, Common Music, and Max/MSP through the Scheme For Max external.
+<p>s7 is a Scheme interpreter intended as an extension language for other applications.
 It exists as just two files, s7.c and
 s7.h, that want only to disappear into someone else's source tree.  There are no libraries,
 no run-time init files, and no configuration scripts.
@@ -122,17 +121,14 @@ A tarball is available: <a href="https://ccrma.stanford.edu/software/s7/s7.tar.g
 There is an svn repository at sourceforge (the Snd project): <a href="https://sourceforge.net/p/snd/svn1/">Snd</a>,
 and a git repository (just s7): git@cm-gitlab.stanford.edu:bil/s7.git <a href="https://cm-gitlab.stanford.edu/bil/s7.git">s7.git</a>.
 Please ignore all other "s7" github sites.  Christos Vagias created a web-assembly site with
-a repl: https://github.com/actonDev/s7-playground/.  
+a repl: https://github.com/actonDev/s7-playground/.
 </p>
 
 <p>
-s7 is the default extension language of Snd and sndlib (<a href="http://ccrma.stanford.edu/software/snd/index.html">snd</a>),
-Rick Taube's Common Music (commonmusic at sourceforge), and Kjetil Matheussen's Radium music editor.  
+s7 is an extension language of Snd and sndlib (<a href="http://ccrma.stanford.edu/software/snd/index.html">snd</a>),
+Rick Taube's Common Music (commonmusic at sourceforge), Kjetil Matheussen's Radium music editor, and Iain Duncan's Scheme for Max (or Pd).
 There are X, Motif, and openGL bindings
 in libxm in the Snd tarball, or at ftp://ccrma-ftp.stanford.edu/pub/Lisp/libxm.tar.gz.
-If you're running s7 in a context
-that has getenv, file-exists?, and system, you can use s7-slib-init.scm
-to gain easy access to slib.  This init file is named "s7.init" in the slib distribution.
 </p>
 
 <p>Although it is a descendant of tinyScheme, s7 is closest as a Scheme dialect to Guile 1.8.
@@ -143,7 +139,7 @@ macros, keywords, hash-tables,
 multiprecision arithmetic,
 generalized set!, unicode, and so on.
 It does not have syntax-rules or any of
-its friends, and it does not think there is any such thing
+its friends, and it thinks there is no such thing
 as an inexact integer.  
 </p>
 
@@ -239,7 +235,7 @@ indented and on a sort of brownish background.
 <p>All numeric types, integers, ratios, reals, and complex numbers are supported.
 The basic integer and real
 types are defined in s7.h, defaulting to int64_t and double.  
-A ratio consists of two integers, a complex number two reals.
+A ratio consists of two integers, a complex number consists of two reals.
 pi is predefined.
 s7 can be built with multiprecision support 
 for all types,  using the gmp, mpfr, and mpc libraries (set WITH_GMP to 1 in s7.c).  
@@ -349,7 +345,7 @@ s7 includes:
 <li>sinh, cosh, tanh, asinh, acosh, atanh
 <li>logior, logxor, logand, lognot, logbit?, ash, integer-decode-float
 <li>random
-<li>nan?, infinite?
+<li>nan?, infinite?, nan, nan-payload
 </ul>
 
 <p>
@@ -423,9 +419,24 @@ In s7, "@" is an exponent marker.
 </pre>
 </div>
 
+<div class="indented">
+<p>
+The functions <b>nan</b> and <b>nan-payload</b> refer to the "payload" that can be associated with a NaN.  s7's reader
+can read NaNs with these payloads: <code>+nan.123</code> is a NaN with payload 123.  s7 displays the NaN payload
+in the same way: +nan.123.  A NaN without any payload (or payload 0) is written +nan.0.
+</p>
+<pre class="indented">
+&gt; (nan 123)
+<em class="gray">+nan.123</em>
+&gt; (nan-payload (nan 123))
+<em class="gray">123</em>
+</pre>
+<p>
+The nan function (and s7's reader) always returns a positive NaN.
+</p>
+</div>
 
 <div class="indented">
-
 <p>
 What is <code>(/ 1.0 0.0)</code>?  s7 gives a "division by zero" error here, and also in <code>(/ 1 0)</code>.
 Guile returns +inf.0 in the first case, which seems reasonable, but a "numerical overflow" error in the second.
@@ -434,7 +445,7 @@ Clisp and sbcl throw an error.  Everybody agrees that <code>(expt 0 0)</code> is
 that <code>(expt 0.0 0.0)</code> is 1.0.  But <code>(expt 0 0.0)</code> and <code>(expt 0.0 0)</code> return different
 results in Guile (1 and 1.0), both are 0.0 in s7, the first is an error in Clisp, but the second returns 1,
 and so on &mdash; what a mess!  This mess was made a lot worse than it needs to be when the IEEE decreed that
-0.0 equals -0.0, so we can't tell them apart, but that they produce different results in nearly every use!  
+0.0 equals -0.0, so we can't tell them apart, but that they produce different results:  
 </p>
 
 <pre class="indented">
@@ -463,8 +474,10 @@ The same problem afflicts memq and assq.
 <p>The <em class=def id="random">random</em> function takes a range and an optional state, and returns a number 
 between zero and the range, of the same type as the range.  It is perfectly reasonable
 to use a range of 0, in which case random returns 0.
-<em class=def id="randomstate">random-state</em> creates a new random state from a seed.  If no state is passed,
-random uses some default state initialized from the current time.  <em class=def id="randomstatep">random-state?</em> returns #t if passed a random state object.
+<em class=def id="randomstate">random-state</em> creates a new random state from a seed.  If no seed is passed,
+random-state returns the current state.
+If no state is passed to random,
+ir uses some default state initialized from the current time.  <em class=def id="randomstatep">random-state?</em> returns #t if passed a random state object.
 </p>
 
 <pre class="indented">
@@ -495,6 +508,25 @@ random uses some default state initialized from the current time.  <em class=def
 <p>copy the random-state to save a spot in a random number sequence, or save the random-state as a list via
 random-state-&gt;list, then to restart from that point, apply random-state to that list.
 </p>
+
+<p>In the gmp s7, random calls gmp's random number generator.  There are
+also many generators in GSL (see libgsl.scm).  In the non-gmp s7, we use Marsaglia's MWC algorithm
+which I think is a good compromise between quality and speed.  If you're calling it more than 
+a billion times, it is probably a good idea to reseed it.  The code I use for this in the auto-tester
+is:
+</p>
+<pre class="indented">
+(require libc.scm)
+(define (reseed)
+  (let ((seed (with-let *libc* 
+		(let ((res (clock_gettime CLOCK_MONOTONIC)))
+		  (+ (* 1000000000 (cadr res)) (caddr res)))))
+	(carry (#(1791398085 1929682203 1683268614 1965537969 1675393560 1967773755 1517746329 
+                  1447497129 1655692410 1606218150 2051013963 1075433238 1557985959 1781943330
+                  1893513180 1631296680 2131995753 2083801278 1873196400 1554115554)
+		(random 20))))
+    (random-state seed carry)))
+</pre>
 </div>
 
 
@@ -582,7 +614,7 @@ have any number after, for example, #b:
 <em class="gray">15.625+1i</em>
 </pre>
 
-<p>(But s7 uses #i for int-vector and does not implement #e).
+<p>s7 uses #i for int-vector and does not implement #e.
 Speaking of #b and friends, what should <code>(string-&gt;number "#xffff" 2)</code> return?
 </p>
 </div>
@@ -599,27 +631,27 @@ Speaking of #b and friends, what should <code>(string-&gt;number "#xffff" 2)</co
  <em class=def id="lambdastar">lambda*</em>
 are extensions of define and lambda that make it easier
 to deal with optional, keyword, and rest arguments.  
-The syntax is very simple: every argument to define* has a default value
+The syntax is very simple: every parameter to define* has a default value
 and is automatically available as a keyword argument.  The default value
 is either #f if unspecified, or given in a list whose first member is
-the argument name.
-The last argument
+the parameter name.
+The last parameter
 can be preceded by :rest or a dot to indicate that all other trailing arguments
-should be packaged as a list under that argument's name.  A trailing or rest
-argument's default value is () and can't be specified in the declaration.
-The rest argument is not available as a keyword argument.
+should be packaged as a list under that parameter's name.  A trailing or rest
+parameter's default value is () and can't be specified in the declaration.
+The rest parameter is not available as a keyword argument.
 </p>
 
 <pre class="indented">
 (<em class=red>define*</em> (hi a (b 32) (c "hi")) (list a b c))
 </pre>
 
-<p>Here the argument "a" defaults to #f, "b" to 32, etc.
+<p>Here the parameter "a" defaults to #f, "b" to 32, etc.
 When the function is called, 
-the argument names are set from the values passed the function,
-then any unset arguments are bound to their default values, evaluated in left-to-right order.
+the parameter names are set from the values passed the function,
+then any unset parameters are bound to their default values, evaluated in left-to-right order.
 As the current argument list is scanned,  any name that occurs as a keyword, :arg for example where the parameter name is arg,
-sets that argument's new value.  Otherwise, as values occur, they
+sets that parameter's new value.  Otherwise, as values occur, they
 are plugged into the actual argument list based on their position, counting a keyword/value pair as one argument.
 This is called an optional-key list in CLM.  So, taking the function
 above as an example:
@@ -885,7 +917,7 @@ another amusing lambda* case:
 <em class=def id="definemacro">define-macro</em>, 
 <em class=def id="definemacrostar">define-macro*</em>, 
 <em class=def id="definebacro">define-bacro</em>, 
-<em class=def id="definebacrostar">define-nacro*</em>, 
+<em class=def id="definebacrostar">define-bacro*</em>, 
 <em class=def id="macroexpand">macroexpand</em>,
 <em class=def id="gensym">gensym</em>, 
 <em class=def id="gensym?">gensym?</em>, and 
@@ -2006,7 +2038,7 @@ or even <code>(&gt; 1 0+i)</code>.
 (<em class=def id="reverseb">reverse!</em> sequence) and (reverse sequence)
 (<em class=def id="fillb">fill!</em> sequence value (start 0) end)
 (<em class=def id="s7copy">copy</em> obj) and (copy source destination (start 0) end)
-(<em class=def id="objecttostring">object-&gt;string</em> obj)
+(<em class=def>object-&gt;string</em> obj)
 (object-&gt;let obj)
 (length obj)
 (append . sequences)
@@ -2112,8 +2144,8 @@ instead of eof-object?.
 </p>
 
 <p>The argument to make-iterator can also be a function or macro.  
-There should be a variable named '+iterator+ with a non-#f
-value in the closure's environment:
+In this case, to be acceptable to iterate, the closure's environment must have a
+variable named '+iterator+ with a non-#f value:
 </p>
 <pre class="indented">
 (define (make-circular-iterator obj)
@@ -2125,7 +2157,7 @@ value in the closure's environment:
            ((#&lt;eof&gt;) ((set! iter (make-iterator obj))))
            (else)))))))
 </pre>
-<p>The 'iterator? variable is similar to the '+documentation+ variable used by documentation.
+<p>The +iterator+ variable is similar to the '+documentation+ variable used by documentation.
 It gives make-iterator some hope of catching inadvertent bogus function arguments that would
 otherwise cause an infinite loop. 
 </p>
@@ -2137,7 +2169,7 @@ otherwise cause an infinite loop.
 <p>
 s7 supports
 vectors with any number of dimensions.  It is here, in particular, that generalized
-set! shines.  make-vector's second argument can be a list of dimensions, rather than
+set! shines.  make-vector's first argument can be a list of dimensions, rather than
 an integer as in the one dimensional case:
 </p>
 
@@ -2186,6 +2218,7 @@ s7_ints, s7_doubles, or unsigned bytes.
 (<em class=def id="vectordimensions">vector-dimensions</em> vect)
 (<em class=def id="vectordimension">vector-dimension</em> vect n)
 (<em class=def id="vectorrank">vector-rank</em> obj)
+(<em class=def id="vectortyper">vector-typer</em> obj)
 
 (<em class=def>float-vector?</em> obj)
 (<em class=def>float-vector</em> . args)
@@ -2223,7 +2256,9 @@ If the type function is omitted (or set to #t),
 no type checking is performed.
 If the type function is a closure (rather than a C-defined or built-in function),
 its name must be accessible; it can't be an anonymous lambda (the signature and
-error handlers need this name).
+error handlers need this name).  <a href="#vectortyper">vector-typer</a> returns or sets this type function;
+when set via vector-typer, there is no automatic check that the vector's current contents
+match that type function.
 </p>
 
 <pre class="indented">
@@ -2529,8 +2564,9 @@ as:
 
 <p>Add optional and rest arguments, and you can't tell who is supposed to
 take which arguments.  
-Currently, you can mix types with implicit indices,
-but a function grabs all remaining indices.
+Currently, you can mix types with implicit indices, but if you implicitly
+call an element of a sequence that is a function
+that is not known to be "safe" (unproblematic) you'll get an error.
 To insist that all objects are of the same type, use an explicit getter:
 </p>
 
@@ -2561,6 +2597,8 @@ To insist that all objects are of the same type, use an explicit getter:
 <li>(<em class=def id="hashtableref">hash-table-ref</em> ht key)
 <li>(<em class=def id="hashtableset">hash-table-set!</em> ht key value)
 <li>(<em class=def id="hashtableentries">hash-table-entries</em> ht)
+<li>(<em class=def id="hashtablekeytyper">hash-table-key-typer</em> obj)
+<li>(<em class=def id="hashtablevaluetyper">hash-table-value-typer</em> obj)
 <li>(<em class=def id="hashcode">hash-code</em> obj eqfunc)
 </ul>
 
@@ -2595,7 +2633,7 @@ Implicit indexing gives multilevel hashes:
 
 <p>hash-code is like Common Lisp's sxhash.  It returns an integer that can be associated with
 an s7 object when implementing your own hash-tables.  s7test.scm has an example using vectors.
-The eqfunc argument is currently ignored (hash-code assumes equal? is in use).
+In this case the eqfunc argument is ignored (hash-code assumes equal? is in use).
 </p>
 
 
@@ -2638,7 +2676,7 @@ of the table sizes, or the order in which the key/value pairs were added.
 </div>
 
 <div class="indented">
-<p>The second argument to make-hash-table (eq-func) is slightly complicated.  If it is omitted,
+<p>The second argument to make-hash-table (eq-func) is slightly complicated.  If it is omitted (or #f),
 s7 chooses the hashing equality and mapping functions based on the keys in the hash-table.
 There are times when you know
 in advance what equality function you want.  If it's one of the built-in s7 equality
@@ -2729,7 +2767,11 @@ much like the third argument to make-vector.
 It is a cons of the type functions,
 <code>(cons symbol? integer?)</code> for example. This says that all the keys must
 be symbols and all the values integers.
+<a href="#hashtablekeytyper">hash-table-key-typer</a> and
+<a href="#hashtablevaluetyper">hash-table-value-typer</a>
+return or set these functions.
 </p>
+
 <pre class="indented">
 &gt; (define (10|12? val) (memv val '(10 12)))
 <em class="gray">10|12?</em>
@@ -2742,6 +2784,37 @@ be symbols and all the values integers.
 &gt; (set! (hash 'b) 32)
 <em class="red">error</em><em class="gray">: hash-table-set! value argument 3, 32, is an integer but should be a 10|12?</em>
 </pre>
+
+<div class="indented">
+<pre>
+(define H (hash-table 'v1 1 'v2 2 'v3 3))
+(let ((last-key #f))
+  (define (valtyp val)
+    (or (not last-key)
+        (eq? last-key 'v1)
+	(and (eq? last-key 'v2)
+             (integer? val)
+	     (&lt;= 0 val 32))))
+  (define (keytyp key)
+    (set! last-key key)
+    #t)
+  (set! (<em class=red>hash-table-key-typer</em> H) keytyp)
+  (set! (<em class=red>hash-table-value-typer</em> H) valtyp))
+  
+;; now (H 'v1) can be set to anything
+;;     (H 'v2) must be an integer between 0 and 32
+;;     (H 'v3) is immutable (but setting it to #f will remove it from H)
+  
+&gt; (hash-table-set! H 'v1 11)
+11
+&gt;(hash-table-set! H 'v2 12)
+12
+&gt; (hash-table-set! H 'v3 13)
+<em class=red>error</em>: hash-table-set! third argument 13, is an integer, but the hash-table's value type checker, valtyp, rejects it
+&gt; (hash-table-set! H 'v2 112)
+<em class=red>error</em>: hash-table-set! third argument 112, is an integer, but the hash-table's value type checker, valtyp, rejects it
+</pre>
+</div>
 
 </blockquote>
 
@@ -2763,7 +2836,7 @@ Environments are first class (and applicable) objects in s7.
 (<em class=def id="funclet">funclet</em> proc)          the environment at the time when proc was defined
 (<em class=def id="isfunclet">funclet?</em> env)          #t if env is a funclet
 (owlet)                 the environment at the point of the last error
-(<em class=def id="unlet">unlet</em>)                 a let with any built-in functions that do not have their original value
+(<em class=def id="unlet">unlet</em>)                 a let with built-in functions with their original value
 
 (<em class=def id="letref">let-ref</em> env sym)       get value of sym in env, same as (env sym)
 (<em class=def id="letset">let-set!</em> env sym val)  set value of sym in env to val, same as (set! (env sym) val)
@@ -2866,7 +2939,7 @@ Or better,
 <p>It is faster to use <code>(biglet 'a-function)</code> than <code>(with-let biglet a-function)</code>.
 </p>
 
-<p><b>let-temporarily</b> (now built-into s7) is somewhat similar to fluid-let in other Schemes.
+<p><b>let-temporarily</b> is somewhat similar to fluid-let in other Schemes.
 Its syntax looks like
 let, but it first saves the current value, then sets the
 variable to the new value (via set!), calls the body, and finally restores the
@@ -2903,12 +2976,18 @@ puts it back to its original value.
 </p>
 
 <p>
-<b>sublet</b> adds bindings (symbols with associated values) to an environment.
-It does not change the environment passed to it, but
-just prepends the new bindings, shadowing any old ones,
-as if you had called "let".
+<b>sublet</b> makes a new let with the bindings passed to it, then sets the new environment's outlet to the 'env' argument.
+This is similar to a let form inside another let.
+</p>
+<pre class="indented">
+&gt; (sublet (curlet) 'b 2)
+<em class="gray">(inlet 'b 2)</em>
+&gt; (let ((a 1)) (with-let (sublet (curlet) 'b 2) (+ a b)))
+<em class="gray">3</em>
+</pre>
+<p>
 To add the bindings directly to the environment,
-use <b>varlet</b>.  Both of these functions accept nil as the
+use <b>varlet</b>.  Both of these functions accept () as the
 'env' argument as shorthand for <code>(rootlet)</code>.
 Both also accept other environments as well as individual bindings,
 adding all the argument's bindings to the new environment.
@@ -2919,7 +2998,7 @@ inlet can also be used to copy an environment without accidentally invoking
 that environment's copy method.
 </p>
 
-<p>Here's an example: we want to define two functions that share a
+<p>Here's an example of varlet: we want to define two functions that share a
 local variable:
 </p>
 
@@ -2989,7 +3068,6 @@ changed built-ins:
 <em class="gray">1</em>
 </pre>
 
-<blockquote>
 <p>
 with-let and unlet are constants, so you can
 use them in any context without worrying about whether they've been redefined.
@@ -3001,6 +3079,14 @@ that unlet accesses is not accessible from scheme code, so there's no way
 that those values can be clobbered).
 </p>
 
+<p><b>cutlet</b> removes bindings from an environment.  If the environment is
+part of the outlet chain of a function, you'll probably get a segfault.
+Don't, for example, <code>(cutlet (outlet (funclet func) 'x))</code>
+where func refers to x in its body.  Similarly, don't mess up the
+outlet chain of a function (via (set! (outlet...))), and still 
+expect that function to do something reasonable. (I may remove cutlet someday).
+</p>
+<br>
 
 <div class="indented">
 
@@ -3121,7 +3207,6 @@ such as abs, we need to put it back to its original form:
 </pre>
 
 </div>
-</blockquote>
 
 
 <p><b>openlet</b> marks its argument, either an environment, a closure, a c-object, or a c-pointer
@@ -3168,9 +3253,9 @@ and openlet? -&gt; methods?.
 
 <div class="indented">
 <p>let-ref and let-set! are problematic as methods.  It is very easy to get into an infinite
-loop, especially with let-ref since any reference to the let within the method body probably
+loop, especially with let-ref, since any reference to the let within the method body probably
 calls let-ref, which calls the let-ref method.  We used to recommend coverlet here, but
-even that is not enough, so not let-ref and let-set! are immutable; they can't be used
+even that is not enough, so now let-ref and let-set! are immutable; they can't be used
 as methods.
 Use let-ref-fallback and let-set-fallback instead, if possible.
 </p>
@@ -3258,6 +3343,19 @@ add information to the namespace created by <code>(object-&gt;let mark)</code>.
 <em class="gray">123.0</em>
 &gt; (fv 0)
 <em class="gray">123.0</em>
+</pre>
+
+<p>Normally, every let's outlet chain goes back to the rootlet.  If we want to
+create a let that breaks that chain, we can use let-ref-fallback:
+</p>
+
+<pre>
+(define lt (<em class=red>openlet</em> (inlet 'a 1
+                           'let-ref-fallback (lambda (e sym) 
+			                       ;; any other symbol is undefined
+					       #&lt;undefined&gt;))))
+&gt; (lt 'abs)
+<em class="gray">#&lt;undefined&gt;</em>
 </pre>
 
 </div>
@@ -3357,7 +3455,7 @@ In s7, multiple values are spliced directly into the caller's argument list.
 
 <div class="indented">
 
-<p>multiple-values are useful in a several situations.  For example,
+<p>multiple-values are useful in several situations.  For example,
 <code>(if test (+ a b c) (+ a b d e))</code> can be written
 <code>(+ a b (if test c (values d e)))</code>. 
 There are a few special uses of multiple-values.
@@ -3627,7 +3725,12 @@ from a simple procedure.
 
 <div class="header" id="format1"><h4>format, object-&gt;string</h4></div>
 
-<p>object-&gt;string returns the string representation of its argument.  Its optional second argument
+<pre class="indented">
+(<em class=def id="objecttostring">object-&gt;string</em> obj (write #t) (max-len (*s7* 'most-positive-fixnum)))
+(<em class=def id="format">format</em> output-choice control-string . arguments)
+</pre>
+
+<p>object-&gt;string returns the string representation of its first argument.  Its optional second argument
 can be #f or :display (use display), #t or :write (the default, use write), or :readable.  In the latter case, object-&gt;string
 tries to produce a string that can be evaluated via eval-string to return an object equal to the
 original.  The optional third argument sets the maximum desired string length; if object-&gt;string
@@ -3641,8 +3744,7 @@ notices it has exceeded this limit, it returns the partial string.
 <em class="gray">"\"hiho\""</em>
 </pre>
 
-<br>
-<p>s7's <em class=def id="format">format</em> function is very close to that in srfi-48.
+<p>s7's format function is very close to CL's and that in srfi-48.
 </p>
 
 <pre class="indented">
@@ -3667,7 +3769,7 @@ notices it has exceeded this limit, it returns the partial string.
 ~S        object-&gt;string as in write
 ~B        number-&gt;string in base 2
 ~O        number-&gt;string in base 8
-~D        number-&gt;string in base 10
+~D        number-&gt;string in base 10 (~:D for ordinal)
 ~X        number-&gt;string in base 16
 ~E        float to string, (format #f "~E" 100.1) -&gt; "1.001000e+02", (%e in C)
 ~F        float to string, (format #f "~F" 100.1) -&gt; "100.100000",   (%f in C)
@@ -3731,7 +3833,7 @@ floats in the "~X" case.  So in s7,
 <p>That is, the output choice matches the argument.  A case that came up in the Guile mailing lists is:
 <code>(format #f "~F" 1/3)</code>.  s7 currently returns "1/3", but Clisp returns "0.33333334".
 </p>
-<br>
+
 <p>The curly bracket directive applies to anything you can map over, not just lists:
 </p>
 
@@ -3743,7 +3845,6 @@ floats in the "~X" case.  So in s7,
 &gt; (with-input-from-string (format #f "(~{~C~^ ~})" (format #f "~B" 1367)) read) ; integer-&gt;list
 <em class="gray">(1 0 1 0 1 0 1 0 1 1 1)</em>
 </pre>
-<br>
 
 <p>Since any sequence can be passed to ~{~}, we need a way to truncate output and represent
 the rest of the sequence with "...", but ~^ only stops at the end of the sequence.  ~|
@@ -3956,9 +4057,9 @@ a procedure's environment.
 </pre>
 
 <p>
-<b>documentation</b> returns the documentation string associated with a procedure.  This used to be 
-the initial string in the function's body (as in CL), but now it is the value of the '+documentation+ variable, if any,
-in the procedure's local environment:
+<b>documentation</b> returns the documentation string associated with a procedure.  This is normally
+provided via the '+documentation+ variable in the function's environment.  If you'd rather, 
+you can treat the initial string in the function's body as documentation.
 </p>
 <pre class="indented">
 (define func 
@@ -3967,6 +4068,13 @@ in the procedure's local environment:
 
 &gt; (documentation func)
 <em class="gray">"helpful info"</em>
+
+(define (cl-func) 
+  "this is documentation"
+  123)
+
+&gt; (documentation cl-func)
+<em class="gray">"this is documentation"</em>
 </pre>
 <p>Since documentation is a method, a function's documentation can be computed at run-time:
 </p>
@@ -3985,7 +4093,7 @@ in the procedure's local environment:
 or a cons containing the minimum and maximum number of arguments acceptable.  If the maximum reported
 is a really big number, that means any number of arguments is ok.
 <b>aritable?</b> takes two arguments, an object and an integer, and returns #t if the object can be
-applied to that many arguments. 
+applied to that many arguments.  (For define* and friends, a key+value pair is considered to be one argument).
 </p>
 
 <pre class="indented">
@@ -3997,6 +4105,10 @@ applied to that many arguments.
 <em class="gray">(0 . 2)</em>
 &gt; (aritable? add-2 1)
 <em class="gray">#t</em>
+&gt; (aritable? add-2 2)
+<em class="gray">#t</em>
+&gt; (aritable? add-2 3) ; we can call (add-2 1 :b 2), but
+<em class="gray">#f</em> ;   as mentioned above, the key+value pair is one argument
 </pre>
 
 <p>
@@ -4021,7 +4133,12 @@ argument types.  #t means any type is possible, and 'values means the function r
 </pre>
 
 <p>which says that the first argument to char-position can be a string or a character,
-and the return type can be either boolean or an integer.
+and the return type can be either boolean or an integer.  If we know a function returns
+multiple values, the return type (first element of the signature) can contain a list 
+describing each such value: <code>(define (f x) (values (floor x) (ceiling x)))</code>
+could be <code>(((integer?) (integer?)) real?)</code>.
+</p>
+<p>
 If the function is defined in scheme, its signature is the value of the '+signature+ variable
 in its closure:
 </p>
@@ -4287,6 +4404,7 @@ read (or one of its friends) in a loop which first checks for #&lt;eof&gt;, then
 a case statement.  In s7, we can dispense with the extra if (and let), and include
 the #&lt;eof&gt; in the case statement: <code>(case (read-char) ((#&lt;eof&gt;) (quit-reading)) ((#\a)...))</code>.
 Another example: <code>(or (eof-object? x) (eqv x 24)...)</code> can be instead: <code>(memv x '(#&lt;eof&gt; 24 ...)</code>.
+(All the discussions online that I've seen of #&lt;eof&gt; or its equivalent confuse the thing (end of file indication) with its name (#&lt;eof&gt;).
 </p>
 </div>
 
@@ -4409,7 +4527,9 @@ via the error function, and can be trapped and dealt with via <em class=def id="
 <p>
 catch has 3 arguments: a tag indicating what error to catch (#t = anything),
 the code, a thunk, that the catch is protecting, and the function to call
-if a matching error occurs during the evaluation of the thunk.  The error handler
+if a matching error occurs during the evaluation of the thunk.  
+The tag is matched to the error type with eq?.
+The error handler
 takes a rest argument which will hold whatever the error function chooses to pass it.
 The error function itself takes at least 2 arguments, the error type, a symbol,
 and the error message.  There may also be other arguments describing the error.
@@ -4620,8 +4740,7 @@ To list all the local bindings from the error outward:
   (format () "~{~A ~}~%" e))
 </pre>
 
-<p>To see the current s7 stack, <code>(stacktrace)</code>.  You'll probably
-want to use this in conjunction with *error-hook*.
+<p>To see the current s7 stack, <code>(stacktrace)</code>.
 To evaluate the error handler in the environment of the error:
 </p>
 
@@ -4645,7 +4764,7 @@ To evaluate the error handler in the environment of the error:
 
 
 <p>The hook <em class=def id="errorhook">*error-hook*</em> provides a way to specialize error reporting.
-Its arguments are named 'type and 'data.
+Its arguments are named 'type and 'data.  It is called if there are no catches.
 </p>
 
 <pre class="indented">
@@ -5493,6 +5612,10 @@ correct.  To clear out the current data, call clear-profile.
 state: 
 </p>
 <pre class="indented">
+version                       a string describing the current s7: e.g. "s7 10.0, 13-Jan-2022"
+major-version                 an integer (10 in the example above)
+minor-version                 an integer (0 in the example above)
+
 print-length                  number of elements to print of a non-string sequence
 max-string-length             maximum size arg to make-string and read-string
 max-format-length             maximum size arg to ~N or the width and precision fields for floats in format
@@ -5510,6 +5633,7 @@ history-enabled               is history buffer receiving additions (if WITH_HIS
 debug                         determines debugging level (see debug.scm), default=0
 profile                       profile switch (0=default, 1=gather profiling info)
 profile-info                  the current profiling data; see profile.scm
+profile-prefix                name (a symbol) used to identify the current environment in profile data
 
 default-rationalize-error     1e-12
 equivalent-float-epsilon      1e-15
@@ -5519,6 +5643,7 @@ float-format-precision        digits to print for floats (16)
 default-random-state          the default arg for random
 most-positive-fixnum          if not using gmp, the most positive integer ("fixnum" comes from CL)
 most-negative-fixnum          as above, but negative
+number-separator              #\null
 
 safety                        0 (see below)
 undefined-identifier-warnings #f 
@@ -5526,10 +5651,11 @@ undefined-constant-warnings   #f
 accept-all-keyword-arguments  #f 
 autoloading?                  #t
 openlets                      #t, whether any let can be open globally (this overrides all openlets)
-expansions?                   #t, whether expansions are handled at read-time 
+expansions?                   #t, whether expansions are handled at read-time
+muffle-warnings?              #f, if #t s7_warn does not output anything
 
-cpu-time                      run time so far
-file-names                    currently loaded files (a list)
+cpu-time                      run time so far (proportional to cpu cycles consumed, not wall-clock seconds)
+file-names or filenames       currently loaded files (a list)
 catches                       a list of the currently active catch tags
 c-types                       a list of c-object type names (from s7_make_c_type, etc)
 
@@ -5552,7 +5678,7 @@ gc-temps-size                 number of cells just allocated that are protected 
 gc-resize-heap-fraction       when to resize the heap (0.8); these two are aimed at GC experiments
 gc-resize-heap-by-4-fraction  when to get panicky about resizing the heap
 gc-protected-objects          vector of the objects permanently protected from the GC
-memory-usage                  a description of current memory allocations (sent to current-output-port)
+memory-usage                  a let (environment) describing current s7 memory allocations
 </pre>
 
 <p>
@@ -5560,6 +5686,20 @@ Use the standard environment syntax to access these fields:
 <code>(*s7* 'stack-top)</code>.  stuff.scm has the function
 *s7*-&gt;list that returns most of these fields in a list.
 </p>
+<p>The compile-time defaults for some of these fields can be set:
+</p>
+<pre class="indented">
+heap-size:               INITIAL_HEAP_SIZE        (64000)
+stack-size:              INITIAL_STACK_SIZE       (4096)
+gc-temps-size:           GC_TEMPS_SIZE            (256)
+bignum-precision:        DEFAULT_BIGNUM_PRECISION (128)
+history-size:            DEFAULT_HISTORY_SIZE     (8)
+print-length:            DEFAULT_PRINT_LENGTH     (12)
+gc-resize-heap-fraction: GC_RESIZE_HEAP_FRACTION  (0.8)
+output-port-data-size:   OUTPUT_PORT_DATA_SIZE    (2048)
+
+See also WITH_WARNINGS, S7_ALIGNED, and GC_TRIGGER_SIZE.
+</pre>
 
 <p><code>(set! (*s7* 'autoloading) #f)</code> turns off the autoloader.
 </p>
@@ -5631,6 +5771,15 @@ The defaults are '(3 45 80 45 #t).
 
 <p>The stack, history and gc-protected-objects fields are intended for debugging.  Don't keep 
 these hanging around and expect good things to happen!
+</p>
+
+<p>The *s7* field 'number-separator refers to what some languages call "numeric literal separator",
+a character that can appear in a number as a separator to make it more readable:  "123,321"
+as opposed to "123321".  If the compile time flag WITH_NUMBER_SEPARATOR is set, and 
+(*s7* 'number-separator) is not #\null (the default), then that character can appear anywhere
+in a number (as long as it is between two digits), and the reader will ignore it.  The *features*
+list will have the entry 'number-separator if s7 was compiled with WITH_NUMBER_SEPARATOR defined.
+(Number separators don't work with bignums).
 </p>
 
 
@@ -5726,8 +5875,7 @@ static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 static void *run_thread(void *obj)
 {
   s7_scheme *sc = (s7_scheme *)obj;
-  const char *str;
-  str = s7_object_to_c_string(sc, s7_make_integer(sc, 123));
+  const char *str = s7_object_to_c_string(sc, s7_make_integer(sc, 123));
   s7_eval_c_string(sc, "(let () \
                           (define (f) \
                             (do ((i 0 (+ i 1))) ((= i 10)) \
@@ -5741,10 +5889,9 @@ static void *run_thread(void *obj)
 
 int main(int argc, char **argv)
 {
-  int32_t i;
-  for (i = 0; i &lt; NUM_THREADS; i++)
+  for (int32_t i = 0; i &lt; NUM_THREADS; i++)
     pthread_create(&amp;threads[i], NULL, run_thread, (void *)s7_init());
-  for (i = 0; i &lt; NUM_THREADS; i++)
+  for (int32_t i = 0; i &lt; NUM_THREADS; i++)
     pthread_join(threads[i], NULL);
   exit(0);
 }
@@ -5828,12 +5975,10 @@ but:
 (display (oldfib 10)) ; "attempt to apply an integer 32 to..."
 </pre>
 <p>So s7 is inconsistent too! (Actually this was consistent until Jan 2021 when I suddenly thought it was
-a mistake and "fixed" it; now I'm having second thoughts.
+a mistake and "fixed" it; now I'm having second thoughts).
 </p>
 
-
-<!-- another case:  (with-let (inlet '+ -) (+ 2 3)) -> 5 -->
-<!-- also, (eq? (if #f #f) (apply values ())) is #t, but memq and assq don't treat them as equal -->
+<!-- (eq? (if #f #f) (apply values ())) is #t, but memq and assq don't treat them as equal -->
 
 </div>
 
@@ -5871,6 +6016,22 @@ a mistake and "fixed" it; now I'm having second thoughts.
 <li>move all the "*var*" names to *s7*: *load-hook* becomes (*s7* 'load-hook) for example.
 </ul>
 
+<p>Currently WITH_PURE_S7:
+</p>
+<ul style="list-style-type:disc;">
+<li>places 'pure-s7 in *features*
+<li>omits char-ready, char-ci*, string-ci*
+<li>omits string-fill!, vector-fill!, vector-append
+<li>omits list-&gt;string, list-&gt;vector, string-&gt;list, vector-&gt;list, let-&gt;list
+<li>omits string-length and vector-length
+<li>omits cond-expand, multiple-values-bind|set!, call-with-values
+<li>omits unquote (the name)
+<li>omits d/f/s/l exponents
+<li>omits make-polar and make-rectangular (use complex)
+<li>omits exact?, inexact?, exact-&gt;inexact, inexact-&gt;exact
+<li>omits set-current-output-port and set-current-input-port
+</ul>
+
 <p>With the move to s7_setter and s7_set_setter (setter in Scheme), 
 dilambda and dilambda? have been reduced to trivial conveniences, so perhaps they can also be
 removed.
@@ -5886,7 +6047,8 @@ refer to the source, not the destination.  substring should be like subvector, b
 get-output-string should be current-output-string. write-char behaves like display, not write.
 provided? should be feature? or *features* should be *provisions*.
 list-ref, list-set!, and list-tail actually only apply to pairs.
-let-temporarily should be templet, or maybe set-temporarily.
+let-temporarily should be templet, or maybe set-temporarily.  define-expansion should be define-reader-macro, but
+that name collides with reader macros in Common Lisp.
 There should not be two names for the same thing: call/cc and call-with-current-continuation: flush the latter!
 The CL-inspired "log*" names such as logand look very old-fashioned.  Standard scheme opts
 for the name "bitwise*"; why not "integerwise" or "bytevectorwise"?  The "wise" business is just noise; are they thinking of The Hobbit?
@@ -6003,22 +6165,6 @@ Other possibilities are <code>signature</code>, <code>documentation</code>,
 <code>arity</code>, <code>arglist</code>, <code>value</code>, and <code>source</code>.
 <code>funclet</code> returns the current function's funclet.
 </p>
-
-<p>Currently WITH_PURE_S7:
-</p>
-<ul style="list-style-type:disc;">
-<li>places 'pure-s7 in *features*
-<li>omits char-ready, char-ci*, string-ci*
-<li>omits string-fill!, vector-fill!, vector-append
-<li>omits list-&gt;string, list-&gt;vector, string-&gt;list, vector-&gt;list, let-&gt;list
-<li>omits string-length and vector-length
-<li>omits cond-expand, multiple-values-bind|set!, call-with-values
-<li>omits unquote (the name)
-<li>omits d/f/s/l exponents
-<li>omits make-polar and make-rectangular (use complex)
-<li>omits exact?, inexact?, exact-&gt;inexact, inexact-&gt;exact
-<li>omits set-current-output-port and set-current-input-port
-</ul>
 
 </div>
 
@@ -6286,9 +6432,12 @@ This output is readable, and does not eat up perfectly good
 characters like vertical bar, but it means we can't easily use
 variable names like "| e t c |".  We could allow a name to
 contain any characters if it starts and ends with "|",
-but then one vertical bar is trouble.  (The symbol function
-actually accepts any number of string arguments which it concatenates
-to form the new symbol name).
+but then one vertical bar is trouble.
+</p>
+<p>
+The symbol function
+accepts any number of string arguments which it concatenates
+to form the new symbol name.
 </p>
 
 <p>
@@ -6548,12 +6697,13 @@ Here are the diffs for the bench script:
 <p>
 I call the standalone version of s7 "repl", so its path
 is /home/bil/motif-snd/repl.  To build repl, get s7.tar.gz
-from https://ccrma.stanford.edu/software/s7/s7.tar.gz,
-add the empty file mus-config.h to the tarball's contents,
+from https://ccrma.stanford.edu/software/s7/s7.tar.gz;
+if not using gcc or clang, add the empty file mus-config.h to the tarball's contents,
 then (in Linux):
 </p>
 <pre>
-gcc s7.c -o repl -DWITH_MAIN -I. -O2 -g -ldl -lm -Wl,-export-dynamic -Wno-stringop-overflow
+gcc s7.c -o repl -DWITH_MAIN -I. -O2 -g -ldl -lm -Wl,-export-dynamic
+;; tcc -o s7 s7.c -I. -lm -DWITH_MAIN -ldl -rdynamic -DWITH_C_LOADER
 </pre>
 <p>For timing tests, I add "-fomit-frame-pointer -funroll-loops -march=native".
 mus-config.h normally has 
@@ -6563,7 +6713,7 @@ mus-config.h normally has
 #define HAVE_COMPLEX_TRIG 1
 </pre>
 <p>
-but s7.c has defaults, so mus-config.h can be empty.
+but s7.c has defaults, so mus-config.h can be empty, or absent.
 Finally, go back to the benchmarks directory and
 </p>
 <pre>
@@ -6584,7 +6734,7 @@ mbrot: 12.6, mbrotZ: 8.0, mperm: 18.9, nboyer: 20.1, nqueens: 27.0,
 ntakl: 8.0, nucleic: 8.3, paraffins: 4.4, parsing: 20.7, peval: 15.2,
 pnpoly: 9.8, primes: 10.2, puzzle: 10.2, quicksort: 40.0, ray: 8.3,
 read1: 0.2, sboyer: 19.1, scheme: 29.5, simplex: 26.9, slatex: 4.2,
-string: 0.1, sum1: 0.2, sum: 4.1, sumfp: 2.2, tail: 0.1, tak: 7.1,
+string: 0.8, sum1: 0.2, sum: 4.1, sumfp: 2.2, tail: 0.1, tak: 7.1,
 takl: 8.1, triangl: 16.4, wc: 4.9.  In the gmp case, chudnovsky: 0.017, pi: .01.
 </p>
 </div>
@@ -6740,25 +6890,22 @@ The examples that follow show:
 
 int main(int argc, char **argv)
 {
-  s7_scheme *s7;
-  char buffer[512];
-  char response[1024];
-
-  s7 = <em class=red>s7_init</em>();                 /* initialize the interpreter */
+  s7_scheme *s7 = <em class=red>s7_init</em>();      /* initialize the interpreter */
   while (1)                       /* fire up a read-eval-print loop */
     {
+      char buffer[512];
       fprintf(stdout, "\n&gt; ");    /* prompt for input */
       fgets(buffer, 512, stdin);
       if ((buffer[0] != '\n') || 
 	  (strlen(buffer) &gt; 1))
 	{                         /* evaluate the input and print the result */
+          char response[1024];
 	  snprintf(response, 1024, "(write %s)", buffer);
 	  <em class=red>s7_eval_c_string</em>(s7, response); 
-	}
-    }
+	}}
 }
 
-/* make mus-config.h (it can be empty), then
+/* if not using gcc or clang, make mus-config.h (it can be empty), then
  *
  *   gcc -c s7.c -I.
  *   gcc -o repl repl.c s7.o -lm -I. -ldl
@@ -6782,7 +6929,7 @@ int main(int argc, char **argv)
  * osx:
  *   gcc -o repl repl.c s7.o -lm -I.
  * openbsd:
- *   gcc -o repl repl.c s7.o -I. -ftrampolines -Wl,-export-dynamic -lm
+ *   clang -o repl repl.c s7.o -I. -fPIC -Wl,-export-dynamic -lm
  */
 </pre>
 </div>
@@ -6855,25 +7002,20 @@ g_io_channel_unref(channel);
 
 int main(int argc, char **argv)
 {
-  s7_scheme *s7;
-  char *buffer;
-  char response[1024];
-  GetLine *gl;            /* The tecla line editor */
-
-  gl = new_GetLine(500, 5000);
-  s7 = s7_init();  
-
+  GetLine *gl = new_GetLine(500, 5000); /* The tecla line editor */
+  s7_scheme *s7 = s7_init();  
   while (1) 
     {
+      char *buffer;
       buffer = gl_get_line(gl, "&gt; ", NULL, 0);
       if ((buffer[0] != '\n') || 
 	  (strlen(buffer) &gt; 1))
 	{                            
+          char response[1024];
 	  snprintf(response, 1024, "(write %s)", buffer);
 	  s7_eval_c_string(s7, response);
 	  fprintf(stdout, "\n");
-	}
-    }
+	}}
   gl = del_GetLine(gl);
 }
 
@@ -6889,9 +7031,7 @@ int main(int argc, char **argv)
 </p>
 
 <pre class="indented">
-in Linux: gcc s7.c -o repl -DWITH_MAIN -I. -O2 -g -ldl -lm -Wl,-export-dynamic -Wno-stringop-overflow
-in *BSD:  gcc s7.c -o repl -DWITH_MAIN -I. -O2 -g -lm -Wl,-export-dynamic
-in OSX:   gcc s7.c -o repl -DWITH_MAIN -I. -O2 -g -lm
+gcc -o nrepl s7.c -O2 -I. -Wl,-export-dynamic -lm -ldl -DWITH_MAIN -DWITH_NOTCURSES -lnotcurses-core
 </pre>
 
 
@@ -6952,9 +7092,7 @@ static void <em class=red>watch_for_c_g</em>(s7_scheme *sc, bool *all_done)
 int main(int argc, char **argv)
 {
   s7_scheme *s7;
-  bool use_begin_hook;
-
-  use_begin_hook = (tcgetattr(fileno(stdin), &amp;save_buf) &gt;= 0);
+  bool use_begin_hook = (tcgetattr(fileno(stdin), &amp;save_buf) &gt;= 0);
   if (use_begin_hook)
     {
       buf = save_buf;
@@ -6976,7 +7114,6 @@ int main(int argc, char **argv)
     }
   else
     {
-      char response[1024];
       while (1) 
 	{
 	  fprintf(stdout, "\n&gt; ");
@@ -6986,6 +7123,7 @@ int main(int argc, char **argv)
 	  if ((buffer[0] != '\n') || 
 	      (strlen(buffer) &gt; 1))
 	    {                            
+              char response[1024];
 	      snprintf(response, 1024, "(write %s)", buffer);
 
 	      if (use_begin_hook)
@@ -6993,9 +7131,7 @@ int main(int argc, char **argv)
 	      s7_eval_c_string(s7, response);
 	      if (use_begin_hook)
 		<em class=red>s7_set_begin_hook</em>(s7, NULL);
-	    }
-	}
-    }
+	    }}}
   if (use_begin_hook)
     tcsetattr(fileno(stdin), TCSAFLUSH, &amp;save_buf);
 }
@@ -7028,12 +7164,7 @@ static s7_pointer add1(s7_scheme *sc, s7_pointer args)
 
 int main(int argc, char **argv)
 {
-  s7_scheme *s7;
-  char buffer[512];
-  char response[1024];
-
-  s7 = s7_init();
-  
+  s7_scheme *s7 = s7_init();
   s7_define_function(s7, "add1", add1, 1, 0, false, "(add1 int) adds 1 to int");
                                       /* add the function "add1" to the interpreter.
                                        *   1, 0, false -&gt; one required arg,
@@ -7044,15 +7175,16 @@ int main(int argc, char **argv)
 
   while (1)                           /* fire up a "repl" */
     {
+      char buffer[512];
       fprintf(stdout, "\n&gt; ");        /* prompt for input */
       fgets(buffer, 512, stdin);
       if ((buffer[0] != '\n') || 
 	  (strlen(buffer) &gt; 1))
 	{                            
+          char response[1024];
 	  snprintf(response, 1024, "(write %s)", buffer);
 	  s7_eval_c_string(s7, response); /* evaluate input and write the result */
-	}
-    }
+	}}
 }
 
 /*    doc7
@@ -7080,8 +7212,7 @@ int main(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-  s7_scheme *s7;
-  s7 = s7_init();
+  s7_scheme *s7 = s7_init();
 
   s7_define_variable(s7, "an-integer", s7_make_integer(s7, 1));
   s7_eval_c_string(s7, "(define (add1 a) (+ a 1))");
@@ -7155,10 +7286,10 @@ int main(int argc, const char* argv[])
       return -1; 
     } 
 
-  s7_pointer val; 
-  std::string str; 
   while (true) 
     { 
+      s7_pointer val; 
+      std::string str; 
       std::cout &lt;&lt; "\ns7&gt; "; 
       std::getline(std::cin, str); 
       val = s7_eval_c_string(s7, str.c_str()); 
@@ -7206,9 +7337,6 @@ static void mus_error_to_s7(int type, char *msg)
 
 int main(int argc, char **argv)
 {
-  char buffer[512];
-  char response[1024];
-
   s7 = s7_init();                     /* initialize the interpreter */
   s7_xen_initialize(s7);              /* initialize the xen stuff (hooks and the xen s7 FFI used by sndlib) */
   Init_sndlib();                      /* initialize sndlib with all the functions linked into s7 */  
@@ -7217,16 +7345,16 @@ int main(int argc, char **argv)
 
   while (1)                           /* fire up a "repl" */
     {
+      char buffer[512];
       fprintf(stdout, "\n&gt; ");        /* prompt for input */
       fgets(buffer, 512, stdin);
-
       if ((buffer[0] != '\n') || 
 	  (strlen(buffer) &gt; 1))
 	{                            
+          char response[1024];
 	  snprintf(response, 1024, "(write %s)", buffer);
 	  s7_eval_c_string(s7, response); /* evaluate input and write the result */
-	}
-    }
+	}}
 }
 
 /* gcc -o doc7 doc7.c -lm -I. /usr/local/lib/libsndlib.a -lasound -ldl
@@ -7352,13 +7480,11 @@ static int dax_type_tag = 0;
 
 static s7_pointer dax_to_string(s7_scheme *sc, s7_pointer args)
 {
-  char *data_str, *str;
   s7_pointer result;
-  int data_str_len;
   dax *o = (dax *)s7_c_object_value(s7_car(args));
-  data_str = s7_object_to_c_string(sc, o-&gt;data);
-  data_str_len = strlen(data_str);
-  str = (char *)calloc(data_str_len + 32, sizeof(char));
+  char *data_str = s7_object_to_c_string(sc, o-&gt;data);
+  int data_str_len = strlen(data_str);
+  char *str = (char *)calloc(data_str_len + 32, sizeof(char));
   snprintf(str, data_str_len + 32, "&lt;dax %.3f %s&gt;", o-&gt;x, data_str);
   free(data_str);
   result = s7_make_string(sc, str);
@@ -7374,16 +7500,14 @@ static s7_pointer free_dax(s7_scheme *sc, s7_pointer obj)
 
 static s7_pointer mark_dax(s7_scheme *sc, s7_pointer obj)
 {
-  dax *o;
-  o = (dax *)s7_c_object_value(obj);
+  dax *o = (dax *)s7_c_object_value(obj);
   s7_mark(o-&gt;data);
   return(NULL);
 }
 
 static s7_pointer make_dax(s7_scheme *sc, s7_pointer args)
 {
-  dax *o;
-  o = (dax *)malloc(sizeof(dax));
+  dax *o = (dax *)malloc(sizeof(dax));
   o-&gt;x = s7_real(s7_car(args));
   if (s7_cdr(args) != s7_nil(sc))
     o-&gt;data = s7_cadr(args);
@@ -7400,40 +7524,35 @@ static s7_pointer is_dax(s7_scheme *sc, s7_pointer args)
 
 static s7_pointer dax_x(s7_scheme *sc, s7_pointer args)
 {
-  dax *o;
-  o = (dax *)<em class=red>s7_c_object_value</em>(s7_car(args));
+  dax *o = (dax *)<em class=red>s7_c_object_value</em>(s7_car(args));
   return(s7_make_real(sc, o-&gt;x));
 }
 
 static s7_pointer set_dax_x(s7_scheme *sc, s7_pointer args)
 {
-  dax *o;
-  o = (dax *)s7_c_object_value(s7_car(args));
+  dax *o = (dax *)s7_c_object_value(s7_car(args));
   o-&gt;x = s7_real(s7_cadr(args));
   return(s7_cadr(args));
 }
 
 static s7_pointer dax_data(s7_scheme *sc, s7_pointer args)
 {
-  dax *o;
-  o = (dax *)s7_c_object_value(s7_car(args));
+  dax *o = (dax *)s7_c_object_value(s7_car(args));
   return(o-&gt;data);
 }
 
 static s7_pointer set_dax_data(s7_scheme *sc, s7_pointer args)
 {
-  dax *o;
-  o = (dax *)s7_c_object_value(s7_car(args));
+  dax *o = (dax *)s7_c_object_value(s7_car(args));
   o-&gt;data = s7_cadr(args);
   return(o-&gt;data);
 }
 
 static s7_pointer dax_is_equal(s7_scheme *sc, s7_pointer args) 
 {
-  s7_pointer p1, p2;
   dax *d1, *d2;
-  p1 = s7_car(args);
-  p2 = s7_cadr(args);
+  s7_pointer p1 = s7_car(args);
+  s7_pointer p2 = s7_cadr(args);
   if (p1 == p2) 
     return(s7_t(sc));
   if ((!s7_is_c_object(p2)) ||
@@ -7448,12 +7567,7 @@ static s7_pointer dax_is_equal(s7_scheme *sc, s7_pointer args)
 
 int main(int argc, char **argv)
 {
-  s7_scheme *s7;
-  char buffer[512];
-  char response[1024];
-
-  s7 = s7_init();
-  
+  s7_scheme *s7 = s7_init();
   s7_define_variable(s7, "*listener-prompt*", s7_make_string(s7, "&gt;"));
 
   dax_type_tag = <em class=red>s7_make_c_type</em>(s7, "dax");
@@ -7473,15 +7587,16 @@ int main(int argc, char **argv)
 
   while (1)
     {
+      char buffer[512];
       fprintf(stdout, "\n%s ", listener_prompt(s7));
       fgets(buffer, 512, stdin);
       if ((buffer[0] != '\n') || 
 	  (strlen(buffer) &gt; 1))
 	{                            
+          char response[1024];
 	  snprintf(response, 1024, "(write %s)", buffer);
 	  s7_eval_c_string(s7, response); /* evaluate input and write the result */
-	}
-    }
+	}}
 }
 
 /* (in Linux);
@@ -7536,26 +7651,23 @@ static s7_pointer my_read(s7_scheme *sc, s7_read_t peek, s7_pointer port)
 
 int main(int argc, char **argv)
 {
-  s7_scheme *s7;
-  char buffer[512];
-  char response[1024];
-
-  s7 = s7_init();  
+  s7_scheme *s7 = s7_init();  
 
   <em class=red>s7_set_current_output_port</em>(s7, <em class=red>s7_open_output_function</em>(s7, my_print));
   s7_define_variable(s7, "io-port", <em class=red>s7_open_input_function</em>(s7, my_read));
 
   while (1) 
     {
+      char buffer[512];
       fprintf(stdout, "\n&gt; ");
       fgets(buffer, 512, stdin);
       if ((buffer[0] != '\n') || 
 	  (strlen(buffer) &gt; 1))
 	{                            
+          char response[1024];
 	  snprintf(response, 1024, "(write %s)", buffer);
 	  s7_eval_c_string(s7, response);
-	}
-    }
+	}}
 }
 
 /* 
@@ -7631,10 +7743,7 @@ static s7_pointer our_add(s7_scheme *sc, s7_pointer args)
 
 int main(int argc, char **argv)
 {
-  s7_scheme *s7;
-  char buffer[512];
-  char response[1024];
-  s7 = s7_init();
+  s7_scheme *s7 = s7_init();
 
   /* get built-in + and string-append */
   old_add = s7_name_to_value(s7, "+");      
@@ -7645,15 +7754,16 @@ int main(int argc, char **argv)
 
   while (1)
     {
+      char buffer[512];
       fprintf(stdout, "\n&gt; ");
       fgets(buffer, 512, stdin);
       if ((buffer[0] != '\n') || 
 	  (strlen(buffer) &gt; 1))
 	{                            
+          char response[1024];
 	  snprintf(response, 1024, "(write %s)", buffer);
 	  s7_eval_c_string(s7, response);
-	}
-    }
+	}}
 }
 
 /*    &gt; (+ 1 2)
@@ -7677,12 +7787,10 @@ int main(int argc, char **argv)
 
 static s7_pointer our_abs(s7_scheme *sc, s7_pointer args)
 {
-  s7_pointer x;
-  x = s7_car(args);
+  s7_pointer x = s7_car(args);
   if (!s7_is_number(x))
     {
-      s7_pointer method;
-      method = <em class=red>s7_method</em>(sc, x, s7_make_symbol(sc, "abs"));
+      s7_pointer method = <em class=red>s7_method</em>(sc, x, s7_make_symbol(sc, "abs"));
       if (method == s7_undefined(sc))                       /* no method found, so raise an error */
 	s7_wrong_type_arg_error(sc, "abs", 1, x, "a real"); 
       return(s7_apply_function(sc, method, args));          /*   else apply the method to the args */
@@ -7692,24 +7800,21 @@ static s7_pointer our_abs(s7_scheme *sc, s7_pointer args)
 
 int main(int argc, char **argv)
 {
-  s7_scheme *s7;
-  char buffer[512];
-  char response[1024];
-
-  s7 = s7_init();
+  s7_scheme *s7 = s7_init();
   s7_define_function(s7, "our-abs", our_abs, 1, 0, false, "abs replacement");
 
   while (1)
     {
+      char buffer[512];
       fprintf(stdout, "\n&gt; ");
       fgets(buffer, 512, stdin);
       if ((buffer[0] != '\n') || 
 	  (strlen(buffer) &gt; 1))
 	{                            
+          char response[1024];
 	  snprintf(response, 1024, "(write %s)", buffer);
 	  s7_eval_c_string(s7, response);
-	}
-    }
+	}}
 }
 
 /*    &gt; (our-abs -1)
@@ -7742,24 +7847,21 @@ static s7_pointer plus(s7_scheme *sc, s7_pointer args)
 
 int main(int argc, char **argv)
 {
-  s7_scheme *s7;
-  char buffer[512];
-  char response[1024];
-
-  s7 = s7_init();
+  s7_scheme *s7 = s7_init();
   <em class=red>s7_define_function_star</em>(s7, "plus", plus, "(red 32) blue", "an example of define* from C");
 
   while (1)
     {
+      char buffer[512];
       fprintf(stdout, "\n&gt; ");
       fgets(buffer, 512, stdin);
       if ((buffer[0] != '\n') || 
 	  (strlen(buffer) &gt; 1))
 	{                            
+          char response[1024];
 	  snprintf(response, 1024, "(write %s)", buffer);
 	  s7_eval_c_string(s7, response);
-	}
-    }
+	}}
 }
 
 /* 
@@ -7794,32 +7896,28 @@ int main(int argc, char **argv)
 static s7_pointer plus(s7_scheme *sc, s7_pointer args)
 {
   /* (define-macro (plus a b) `(+ ,a ,b)) */
-  s7_pointer a, b;
-  a = s7_car(args);
-  b = s7_cadr(args);
+  s7_pointer a = s7_car(args);
+  s7_pointer b = s7_cadr(args);
   return(s7_list(sc, 3, s7_make_symbol(sc, "+"),  a, b));
 }
 
 int main(int argc, char **argv)
 {
-  s7_scheme *s7;
-  char buffer[512];
-  char response[1024];
-
-  s7 = s7_init();
+  s7_scheme *s7 = s7_init();
   <em class=red>s7_define_macro</em>(s7, "plus", plus, 2, 0, false, "plus adds its two arguments");
 
   while (1)
     {
+      char buffer[512];
       fprintf(stdout, "\n&gt; ");
       fgets(buffer, 512, stdin);
       if ((buffer[0] != '\n') || 
 	  (strlen(buffer) &gt; 1))
 	{                            
+          char response[1024];
 	  snprintf(response, 1024, "(write %s)", buffer);
 	  s7_eval_c_string(s7, response);
-	}
-    }
+	}}
 }
 
 /* 
@@ -7847,9 +7945,8 @@ To accomplish the same thing in C, we use s7_method and s7_apply_function:
 static s7_pointer plus(s7_scheme *sc, s7_pointer args)
 {
   #define plus_help "(plus obj ...) applies obj's plus method to obj and any trailing arguments."
-  s7_pointer obj, method;
-  obj = s7_car(args);
-  method = <em class=red>s7_method</em>(sc, obj, s7_make_symbol(sc, "plus"));
+  s7_pointer obj = s7_car(args);
+  s7_pointer method = <em class=red>s7_method</em>(sc, obj, s7_make_symbol(sc, "plus"));
   if (s7_is_procedure(method))
     return(<em class=red>s7_apply_function</em>(sc, method, args));
   return(s7_f(sc));
@@ -7857,22 +7954,20 @@ static s7_pointer plus(s7_scheme *sc, s7_pointer args)
 
 int main(int argc, char **argv)
 {
-  s7_scheme *s7;
-  s7 = s7_init();
+  s7_scheme *s7 = s7_init();
   s7_define_function(s7, "plus", plus, 1, 0, true, plus_help);
   while (1)
     {
       char buffer[512];
-      char response[1024];
       fprintf(stdout, "\n&gt; ");
       fgets(buffer, 512, stdin);
       if ((buffer[0] != '\n') || 
 	  (strlen(buffer) &gt; 1))
 	{                            
+          char response[1024];
 	  snprintf(response, 1024, "(write %s)", buffer);
 	  s7_eval_c_string(s7, response);
-	}
-    }
+	}}
 }
 
 /* gcc -c s7.c -I.
@@ -7922,9 +8017,6 @@ static s7_pointer our_sleep(s7_scheme *sc, s7_pointer args)
 
 int main(int argc, char **argv)
 {
-  char buffer[512];
-  char response[1024];
-
   s7 = s7_init();
   s7_define_function(s7, "sleep", our_sleep, 0, 0, false, "(sleep) sleeps");
   s7_define_variable(s7, "*interrupt*", s7_f(s7)); 
@@ -7940,15 +8032,16 @@ int main(int argc, char **argv)
 
   while (1)
     {
+      char buffer[512];
       fprintf(stderr, "\n&gt; ");
       fgets(buffer, 512, stdin);
       if ((buffer[0] != '\n') || 
 	  (strlen(buffer) &gt; 1))
 	{                            
+          char response[1024];
 	  snprintf(response, 1024, "(write %s)", buffer);
 	  s7_eval_c_string(s7, response);
-	}
-    }
+	}}
 }
 
 /*
@@ -7989,8 +8082,7 @@ static s7_pointer scheme_set_notification(s7_scheme *sc, s7_pointer args)
 
 int main(int argc, char **argv)
 {
-  s7_scheme *s7;
-  s7 = s7_init();  
+  s7_scheme *s7 = s7_init();  
 
   s7_define_function(s7, "notify-C", scheme_set_notification, 2, 0, false, "called if notified-var is set!");
   s7_define_variable(s7, "notified-var", s7_make_integer(s7, 0));
@@ -8004,21 +8096,19 @@ int main(int argc, char **argv)
     }
   else
     {
-      char buffer[512];
-      char response[1024];
       while (1) 
 	{
+          char buffer[512];
 	  fprintf(stdout, "\n&gt; ");
 	  fgets(buffer, 512, stdin);
 	  
 	  if ((buffer[0] != '\n') || 
 	      (strlen(buffer) &gt; 1))
 	    {                            
+              char response[1024];
 	      snprintf(response, 1024, "(write %s)", buffer);
 	      s7_eval_c_string(s7, response);
-	    }
-	}
-    }
+	    }}}
 }
 
 /*    &gt; notified-var
@@ -8051,16 +8141,11 @@ static s7_pointer func1(s7_scheme *sc, s7_pointer args)
 
 int main(int argc, char **argv)
 {
-  s7_scheme *s7;
-  s7_pointer new_env;
-
-  s7 = s7_init();  
-
+  s7_scheme *s7 = s7_init();  
   /* "func1" and "var1" will be placed in an anonymous environment,
    *   accessible from Scheme via the global variable "lib-exports"
    */
-  
-  new_env = <em class=red>s7_inlet</em>(s7, s7_curlet(s7), s7_nil(s7));
+  s7_pointer new_env = <em class=red>s7_inlet</em>(s7, s7_curlet(s7), s7_nil(s7));
   /* make a private environment for func1 and var1 below (this is our "namespace") */
   s7_gc_protect(s7, new_env);
 
@@ -8082,21 +8167,19 @@ int main(int argc, char **argv)
     }
   else
     {
-      char buffer[512];
-      char response[1024];
       while (1) 
 	{
+          char buffer[512];
 	  fprintf(stdout, "\n&gt; ");
 	  fgets(buffer, 512, stdin);
 	  
 	  if ((buffer[0] != '\n') || 
 	      (strlen(buffer) &gt; 1))
 	    {                            
+              char response[1024];
 	      snprintf(response, 1024, "(write %s)", buffer);
 	      s7_eval_c_string(s7, response);
-	    }
-	}
-    }
+	    }}}
 }
 
 /*     &gt; func1
@@ -8154,12 +8237,8 @@ static s7_pointer error_handler(s7_scheme *sc, s7_pointer args)
 
 int main(int argc, char **argv)
 {
-  s7_scheme *s7;
-  char buffer[512];
-  char response[1024];
+  s7_scheme *s7 = s7_init();  
   bool with_error_hook = false;
-
-  s7 = s7_init();  
   s7_define_function(s7, "error-handler", error_handler, 1, 0, false, "our error handler");
 
   if (with_error_hook)
@@ -8170,18 +8249,19 @@ int main(int argc, char **argv)
                                     (set! (hook 'result) 'our-error))))");
   while (1) 
     {
+      char buffer[512];
       fprintf(stdout, "\n&gt; ");
       fgets(buffer, 512, stdin);
 	  
       if ((buffer[0] != '\n') || 
 	  (strlen(buffer) &gt; 1))
 	{                            
-	  s7_pointer old_port, result;
+	  s7_pointer result;
 	  int gc_loc = -1;
 	  const char *errmsg = NULL;
 
 	  /* trap error messages */
-	  old_port = s7_set_current_error_port(s7, s7_open_output_string(s7));
+	  s7_pointer old_port = s7_set_current_error_port(s7, s7_open_output_string(s7));
 	  if (old_port != s7_nil(s7))
 	    gc_loc = s7_gc_protect(s7, old_port);
 
@@ -8202,8 +8282,7 @@ int main(int argc, char **argv)
 	  s7_set_current_error_port(s7, old_port);
 	  if (gc_loc != -1)
 	    s7_gc_unprotect_at(s7, gc_loc);
-	}
-    }
+	}}
 }
 
 /* 
@@ -8257,15 +8336,10 @@ static s7_pointer my_hook_function(s7_scheme *sc, s7_pointer args)
 
 int main(int argc, char **argv)
 {
-  s7_scheme *s7;
-  char buffer[512];
-  char response[1024];
-  s7_pointer test_hook;
-
-  s7 = s7_init();  
+  s7_scheme *s7 = s7_init();  
 
   /* define test_hook in C, test-hook in Scheme, arguments are named a and b */
-  test_hook = <em class=red>s7_eval_c_string</em>(s7, "(make-hook 'a 'b)");
+  s7_pointer test_hook = <em class=red>s7_eval_c_string</em>(s7, "(make-hook 'a 'b)");
   s7_define_constant(s7, "test-hook", test_hook); 
 
   /* add my_hook_function to the test_hook function list */
@@ -8275,16 +8349,17 @@ int main(int argc, char **argv)
 				s7_hook_functions(s7, test_hook)));
   while (1) 
     {
+      char buffer[512];
       fprintf(stdout, "\n&gt; ");
       fgets(buffer, 512, stdin);
 	  
       if ((buffer[0] != '\n') || 
 	  (strlen(buffer) &gt; 1))
 	{                            
+          char response[1024];
 	  snprintf(response, 1024, "(write %s)", buffer);
 	  s7_eval_c_string(s7, response);
-	}
-    }
+	}}
 }
 
 /* 
@@ -8360,8 +8435,7 @@ static void *library = NULL;
 static s7_pointer try(s7_scheme *sc, s7_pointer args)
 {
   /* try tries to call an arbitrary function in the shared library */
-  void *func;
-  func = <em class=red>dlsym</em>(library, s7_string(s7_car(args)));
+  void *func = <em class=red>dlsym</em>(library, s7_string(s7_car(args)));
   if (func)
     {
       /* we'll assume double f(double) */
@@ -8381,15 +8455,13 @@ static s7_pointer cload(s7_scheme *sc, s7_pointer args)
   if (library)
     {
       /* call our init func to define add-1 in s7 */
-      void *init_func;
-      init_func = <em class=red>dlsym</em>(library, s7_string(s7_cadr(args)));
+      void *init_func = <em class=red>dlsym</em>(library, s7_string(s7_cadr(args)));
       if (init_func)
 	{
 	  typedef void *(*dl_func)(s7_scheme *sc);
 	  ((dl_func)<em class=red>init_func</em>)(sc);  /* call the initialization function (init_ex above) */
 	  return(s7_t(sc));
-	}
-    }
+	}}
   return(s7_error(sc, s7_make_symbol(sc, "load-error"), 
 		      s7_list(sc, 2, s7_make_string(sc, "loader error: ~S"), 
 			             s7_make_string(sc, dlerror()))));
@@ -8397,28 +8469,24 @@ static s7_pointer cload(s7_scheme *sc, s7_pointer args)
 
 int main(int argc, char **argv)
 {
-  char buffer[512];
-  char response[1024];
-  s7_scheme *s7;
-
-  s7 = s7_init();  
-
+  s7_scheme *s7 = s7_init();  
   s7_define_function(s7, "cload", cload, 2, 0, false, CLOAD_HELP);
   s7_define_function(s7, "try", try, 2, 0, false, 
                          "(try name num) tries to call name in the shared library with the argument num.");
 
   while (1) 
     {
+      char buffer[512];
       fprintf(stdout, "\n&gt; ");
       fgets(buffer, 512, stdin);
 	  
       if ((buffer[0] != '\n') || 
 	  (strlen(buffer) &gt; 1))
 	{                            
+          char response[1024];
 	  snprintf(response, 1024, "(write %s)", buffer);
 	  s7_eval_c_string(s7, response);
-	}
-    }
+	}}
 }
 
 /* Put the module in the file ex3a.c and the main program in ex3.c, then
@@ -8428,7 +8496,7 @@ int main(int argc, char **argv)
  *   gcc ex3a.o -shared -o ex3a.so
  *   gcc -c s7.c -I. -fPIC -shared
  *   gcc -o ex3 ex3.c s7.o -lm -ldl -I. -Wl,-export-dynamic
- *   # omit -ldl in freeBSD, openBSD might want -ftrampolines
+ *   # omit -ldl in freeBSD
  *
  * in Mac OSX:
  *   gcc -c ex3a.c
@@ -8521,8 +8589,8 @@ void add1_init(s7_scheme *sc)
 static s7_pointer big_add_1(s7_scheme *sc, s7_pointer args)
 {
   /* add 1 to either a normal number or a bignum */
-  s7_pointer x, n;
-  x = s7_car(args);
+  s7_pointer n;
+  s7_pointer x = s7_car(args);
   if (s7_is_big_integer(x))
     {
       mpz_t big_n;
@@ -8574,24 +8642,21 @@ static s7_pointer big_add_1(s7_scheme *sc, s7_pointer args)
 
 int main(int argc, char **argv)
 {
-  s7_scheme *s7;
-  char buffer[512];
-  char response[1024];
-
-  s7 = s7_init();  
+  s7_scheme *s7 = s7_init();  
   s7_define_function(s7, "add-1", big_add_1, 1, 0, false, "(add-1 num) adds 1 to num");
 
   while (1) 
     {
+      char buffer[512];
       fprintf(stdout, "\n&gt; ");
       fgets(buffer, 512, stdin);
       if ((buffer[0] != '\n') || 
 	  (strlen(buffer) &gt; 1))
 	{                            
+          char response[1024];
 	  snprintf(response, 1024, "(write %s)", buffer);
 	  s7_eval_c_string(s7, response);
-	}
-    }
+	}}
 }
 
 /* 
@@ -8639,7 +8704,7 @@ static s7_pointer gmp_bessel_j0(s7_scheme *sc, s7_pointer args)
   s7_pointer x, result;
   mpfr_t mp;
 
-  mpfr_init2(mp, s7_integer(s7_let_field_ref(sc, s7_make_symbol(sc, "bignum-precision"))));
+  mpfr_init2(mp, s7_integer(s7_starlet_ref(sc, s7_make_symbol(sc, "bignum-precision"))));
   /* initialize the mpfr variable mp to the current s7 bignum-precision */
 
   x = s7_car(args);
@@ -8777,6 +8842,7 @@ static s7_pointer my_car(s7_scheme *sc, s7_pointer lst)
 s7_pointer s7_error(s7_scheme *sc, s7_pointer type, s7_pointer info);
 
 s7_pointer s7_wrong_type_arg_error(s7_scheme *sc, const char *caller, s7_int arg_n, s7_pointer arg, const char *descr);
+s7_pointer s7_wrong_type_error(s7_scheme *sc, s7_pointer caller, s7_int arg_n, s7_pointer arg, s7_pointer descr);
 s7_pointer s7_out_of_range_error(s7_scheme *sc, const char *caller, s7_int arg_n, s7_pointer arg, const char *descr);
 s7_pointer s7_wrong_number_of_args_error(s7_scheme *sc, const char *caller, s7_pointer args);
 
@@ -8788,7 +8854,7 @@ s7_pointer s7_set_current_error_port(s7_scheme *sc, s7_pointer port);
 a symbol giving the error type, and a list giving the error data.  In s7, all of the data lists
 are organized so that you can <code>(apply format #f data)</code> to get an error string.
 If you're using catch to handle errors, the error type is what catch looks for.  So, the
-s7_wrong_type_arg call above could be:
+s7_wrong_type_arg_error call above could be:
 </p>
 <pre class="indented">
 s7_error(sc, s7_make_symbol(sc, "wrong-type-arg"), 
@@ -8801,23 +8867,26 @@ and a description of the type expected.  If the argument number is 0, that info 
 error message (that is, the caller takes only one argument).  s7_out_of_range_error is similar.
 s7_wrong_number_of_args_error takes the caller's name and the offending arg list.  The corresponding
 error types are 'wrong-type-arg, 'wrong-number-of-args, and 'out-of-range.
+A faster version is s7_wrong_type_error; here the caller is an s7 symbol or string, and the
+description is an s7 string.
 </p>
 
 <p>Normally, s7_error sends its error message
 to the current error-port which defaults to stderr. In GUI-based apps,
-you may need to redirect the output to your interface.  One example is
-s7/tools/grepl.c.  Its evaluator function wraps up the s7_eval_c_string:
+you may need to redirect the output to your interface.  One method,
+used in Snd's snd-motif.c, captures the error output in an output string:
 </p>
 <pre class="indented">
 old_port = s7_set_current_error_port(s7, s7_open_output_string(s7));
 ...
 result = s7_eval_c_string(s7, text);
 errmsg = s7_get_output_string(s7, s7_current_error_port(s7));
+s7_close_output_port(s7, s7_current_error_port(s7));
+s7_set_current_error_port(s7, old_port);
 ...
 </pre>
 <p>and if errmsg is not NULL, it posts it somewhere.
-If you don't want catch or s7's error messages, you can go down
-a level via *error-hook*.
+(You'll also want to GC-protect the old port while it is idle).
 </p>
 <p>s7_error does not return; its s7_pointer return type is just a convenience.  It unwinds the
 scheme stack, closing files, handling dynamic-winds, looking for a catch that matches its type argument
@@ -8964,7 +9033,8 @@ and treats it as if it were the contents of a file of scheme code.  So, unlike s
 multiple statements, and things like double-quote don't need to be quoted.  nrepl.c for example
 embeds the contents of nrepl.scm at compile time, then calls s7_load_c_string at program startup.  It also
 includes notcurses_s7.c.  The end result is a stand-alone program that doesn't need to load either nrepl.scm
-or notcurses_s7.so.
+or notcurses_s7.so.  The "content" argument should be a null-terminated C string. The "bytes" argument 
+is the contents length, not including the trailing null, as in strlen.  There are simple examples in ffitest.c.
 </p>
 
 <blockquote>
@@ -9022,6 +9092,7 @@ s7_autoload_set_names(sc, snd_names, 5924);
 
 <pre class="indented">
 s7_pointer s7_eval(s7_scheme *sc, s7_pointer code, s7_pointer e);
+s7_pointer s7_eval_with_location(s7_scheme *sc, s7_pointer code, s7_pointer e, const char *caller, const char *file, s7_int line);
 s7_pointer s7_eval_c_string(s7_scheme *sc, const char *str);
 s7_pointer s7_eval_c_string_with_environment(s7_scheme *sc, const char *str, s7_pointer e);
 
@@ -9076,6 +9147,7 @@ to the arguments.
 void s7_define(s7_scheme *sc, s7_pointer env, s7_pointer symbol, s7_pointer value);
 bool s7_is_defined(s7_scheme *sc, const char *name);
 
+/* these s7_define* functions return a symbol */
 s7_pointer s7_define_variable(s7_scheme *sc, const char *name, s7_pointer value);
 s7_pointer s7_define_variable_with_documentation(s7_scheme *sc, const char *name, s7_pointer value, const char *help);
 
@@ -9107,6 +9179,7 @@ void s7_define_typed_function_star(s7_scheme *sc, const char *name, s7_function 
 s7_pointer s7_define_macro(s7_scheme *sc, const char *name, s7_function fnc, 
                            s7_int required_args, s7_int optional_args, bool rest_arg, const char *doc);
 
+/* s7_make* functions return a function */
 s7_pointer s7_make_function(s7_scheme *sc, const char *name, s7_function fnc, 
                             s7_int required_args, s7_int optional_args, bool rest_arg, const char *doc);
 s7_pointer s7_make_safe_function(s7_scheme *sc, const char *name, s7_function fnc, 
@@ -9167,16 +9240,19 @@ s7_define_variable(s7, "var", s7_make_integer(s7, 123)); /* (define var 123) */
 <pre class="indented">
 s7_define_constant(sc, "var", s7_f(sc));  /* (define-constant var 123) */
 </pre>
+<p>Most of the s7_define* functions return the name as a symbol; this reflects the way
+define worked in s7 until 2014.  Backwards compatibility...
+</p>
 
 <p>The rest of the functions in this section deal with tieing C functions into Scheme.
-s7_make_function creates a Scheme function object from the s7_function 'fnc'.
+s7_make_function creates (and returns) a Scheme function object from the s7_function 'fnc'.
 An s7_function is a C function of the form <code>s7_pointer func(s7_scheme *sc, s7_pointer args)</code>.
 The new function's name is 'name', it requires 'required_args' arguments,
 it can accept 'optional_args' other arguments, and if 'rest_arg' is true, it accepts
 a "rest" argument (a list of all the trailing arguments).  
 The function's documentation is 'doc'.
 </p>
-<p>s7_define_function is the same as s7_make_function, but it also adds 'name' (as a symbol) to the
+<p>Leaving aside the value returned, s7_define_function is the same as s7_make_function, but it also adds 'name' (as a symbol) to the
 global environment, with the function as its value.  For example, the Scheme
 function 'car' is essentially:
 </p>
@@ -9191,7 +9267,7 @@ s7_define_function(sc, "car", g_car, 1, 0, false, "(car obj)");
 <p>which says that car has one required argument, no optional arguments, and no "rest" argument.
 </p>
 <p>s7_define_macro defines a Scheme macro; its arguments are not evaluated (unlike a function),
-but its returned value (assumed to be some sort of Scheme expression) is evaluated.
+but its returned value (assumed to be some sort of Scheme expression) is evaluated.  It returns a symbol.
 </p>
 <p>The "safe" and "unsafe" versions of these functions refer to the s7 optimizer.
 If it knows a function is safe, it can more thoroughly optimize the expression it is in.
@@ -9340,7 +9416,7 @@ See free_dax in the <a href="#pwstype">dax</a> example.
 </p>
 <p>s7_c_type_set_mark sets the function that is called by the GC during its marking phase.  Any s7_pointer
 value local to your C struct should be marked explicitly at this time, or the GC will free it.  Use s7_mark
-for this (see mark_dax).
+for this (see mark_dax).  Don't allocate any s7 objects in the mark function (otherwise you'll get a recursive call of the GC).
 </p>
 <p>s7_c_type_set_equal and s7_c_type_set_equivalent set the function called when s7 sees a c-object of the
 current type as an argument to equal? or equivalent?.  When called, these functions can assume that the
@@ -9399,7 +9475,7 @@ bool s7_is_input_port(s7_scheme *sc, s7_pointer p);
 bool s7_is_output_port(s7_scheme *sc, s7_pointer p);
 void s7_close_input_port(s7_scheme *sc, s7_pointer p);
 void s7_close_output_port(s7_scheme *sc, s7_pointer p);
-void s7_flush_output_port(s7_scheme *sc, s7_pointer p);
+bool s7_flush_output_port(s7_scheme *sc, s7_pointer p); /* false=flush lost data */
 const char *s7_port_filename(s7_scheme *sc, s7_pointer x);
 s7_int s7_port_line_number(s7_scheme *sc, s7_pointer p);
 
@@ -9409,6 +9485,7 @@ s7_pointer s7_open_output_file(s7_scheme *sc, const char *name, const char *mode
 s7_pointer s7_open_input_string(s7_scheme *sc, const char *input_string);  
 s7_pointer s7_open_output_string(s7_scheme *sc);
 const char *s7_get_output_string(s7_scheme *sc, s7_pointer out_port);
+s7_pointer s7_output_string(s7_scheme *sc, s7_pointer out_port);
 
 typedef enum {S7_READ, S7_READ_CHAR, S7_READ_LINE, S7_PEEK_CHAR, S7_IS_CHAR_READY, S7_NUM_READ_CHOICES} s7_read_t;
 s7_pointer s7_open_output_function(s7_scheme *sc, void (*function)(s7_scheme *sc, uint8_t c, s7_pointer port));  
@@ -9438,6 +9515,8 @@ returns the file associated with a file port.  s7_port_line_number returns posit
 reader in an input file port.  The "use_write" parameter to s7_object_to_string refers
 to the write/display choice in scheme.  The string returned by s7_object_to_c_string
 should be freed by the caller.
+s7_output_string is the same as s7_get_output_string except that it returns an s7 string,
+not a C string.
 </p>
 <p>s7_open_input_function and s7_open_output_function
 call their "function" argument when input or output is requested.  The "read_choice"
@@ -9482,8 +9561,12 @@ s7_pointer s7_let_to_list(s7_scheme *sc, s7_pointer let);
 bool s7_is_let(s7_pointer e);
 s7_pointer s7_let_ref(s7_scheme *sc, s7_pointer let, s7_pointer symbol);
 s7_pointer s7_let_set(s7_scheme *sc, s7_pointer let, s7_pointer symbol, s7_pointer val);
-s7_pointer s7_let_field_ref(s7_scheme *sc, s7_pointer symbol);
-s7_pointer s7_let_field_set(s7_scheme *sc, s7_pointer symbol, s7_pointer new_value);
+
+s7_pointer s7_starlet_ref(s7_scheme *sc, s7_pointer sym);
+s7_pointer s7_starlet_set(s7_scheme *sc, s7_pointer sym, s7_pointer new_value);
+/* the old confusing names for the same functions: */
+  s7_pointer s7_let_field_ref(s7_scheme *sc, s7_pointer symbol);
+  s7_pointer s7_let_field_set(s7_scheme *sc, s7_pointer symbol, s7_pointer new_value);
 
 s7_pointer s7_openlet(s7_scheme *sc, s7_pointer e);
 bool s7_is_openlet(s7_pointer e);
@@ -9500,11 +9583,11 @@ void s7_slot_set_real_value(s7_scheme *sc, s7_pointer slot, s7_double value);
 s7_sublet, s7_inlet, s7_varlet, s7_let_to_list, s7_is_let, s7_let_ref, s7_let_set, s7_openlet,
 and s7_is_openlet.
 </p>
-<p>s7_let_field_ref and s7_let_field_set refer to *s7*, the let that holds various s7 settings.
+<p>s7_starlet_ref and s7_starlet_set refer to *s7*, the let that holds various s7 settings.
 To get the current default print-length,
 </p>
 <pre class="indented">
-s7_integer(s7_let_field_ref(s7, s7_make_symbol(s7, "print-length")))
+s7_integer(s7_starlet_ref(s7, s7_make_symbol(s7, "print-length")))
 </pre>
 <p>s7_method looks for a field in "object" with the name "method", a symbol.
 For example, in clm2xen.c, if mus-copy is called on an object that Snd does not
@@ -9636,6 +9719,7 @@ s7_pointer s7_make_real(s7_scheme *sc, s7_double num);
 s7_pointer s7_make_mutable_real(s7_scheme *sc, s7_double n);
 s7_double s7_number_to_real(s7_scheme *sc, s7_pointer x);
 s7_double s7_number_to_real_with_caller(s7_scheme *sc, s7_pointer x, const char *caller);
+s7_double s7_number_to_real_with_location(s7_scheme *sc, s7_pointer x, s7_pointer caller);
 
 bool s7_is_rational(s7_pointer arg);
 bool s7_is_ratio(s7_pointer arg);
@@ -9651,6 +9735,7 @@ s7_double s7_imag_part(s7_pointer z);
 
 s7_double s7_random(s7_scheme *sc, s7_pointer state);
 s7_pointer s7_random_state(s7_scheme *sc, s7_pointer seed);
+bool s7_is_random_state(s7_pointer p);
 s7_pointer s7_random_state_to_list(s7_scheme *sc, s7_pointer args);
 void s7_set_default_random_state(s7_scheme *sc, s7_int seed, s7_int carry);
 
@@ -9685,7 +9770,9 @@ data[kp] = opt_func(s7, res);             /* call opt_func */
 <p>s7_number_to_real returns any real number as an s7_double.  If it can't
 convert its argument, it signals an error, which is annoying because it doesn't
 know where that error occured in scheme.  So s7_number_to_real_with_caller gives
-you a way to tell it at lease the caller's name.
+you a way to tell it at least the caller's name.  s7_number_to_real_with_location
+is the same function, but the caller argument is a s7 symbol or string (this is much faster
+than using a char*).
 </p>
 <p>For the bignum functions, see <a href="#gmpex">Bignums in C</a>.
 </p>
@@ -9709,6 +9796,7 @@ s7_pointer s7_make_list(s7_scheme *sc, s7_int length, s7_pointer initial_value);
 s7_int s7_list_length(s7_scheme *sc, s7_pointer a);
 s7_pointer s7_list(s7_scheme *sc, s7_int num_values, ...);
 s7_pointer s7_list_nl(s7_scheme *sc, s7_int num_values, ...);
+s7_pointer s7_array_to_list(s7_scheme *sc, s7_int num_values, s7_pointer *array);
 s7_pointer s7_list_ref(s7_scheme *sc, s7_pointer lst, s7_int num);
 s7_pointer s7_list_set(s7_scheme *sc, s7_pointer lst, s7_int num, s7_pointer val);
 
@@ -9723,7 +9811,8 @@ bool s7_tree_memq(s7_scheme *sc, s7_pointer sym, s7_pointer tree);
 <p>These functions are mostly obvious: s7_car corresponds to scheme car, etc.
 s7_list_nl was added to catch a typo that affected s7_list: the latter would accept
 trailing, but ignored list values.  s7_tree_memq is like s7_memq, but searches
-an entire tree structure. not just the top-level list.
+an entire tree structure. not just the top-level list.  s7_array_to_list takes
+an array of s7_pointers and returns a list of them (similar to s7_vector_to_list).
 </p>
 
 
@@ -9731,6 +9820,7 @@ an entire tree structure. not just the top-level list.
 <pre class="indented">
 s7_pointer s7_make_vector(s7_scheme *sc, s7_int len);
 s7_pointer s7_make_and_fill_vector(s7_scheme *sc, s7_int len, s7_pointer fill);
+s7_pointer s7_make_normal_vector(s7_scheme *sc, s7_int len, s7_int dims, s7_int *dim_info);
 bool s7_is_vector(s7_pointer p);
 
 s7_int s7_vector_length(s7_pointer vec);
@@ -9766,6 +9856,7 @@ s7_pointer s7_vector_set_n(s7_scheme *sc, s7_pointer vector, s7_pointer value, s
 s7_make_and_fill_vector is similar, but the initial element is set by the "fill" parameter.  This value
 is simply placed in every vector location, not copied, so if you pass a cons, then change its car,
 that change is reflected in every element of the vector.
+s7_make_normal_vector returns a possibly multidimensional inhomogenous vector (a "normal" vector, as opposed to an int-vector or a float-vector).
 </p>
 <p>s7_is_vector is the same as vector?, s7_vector_length is length.
 s7_vector_rank returns the number of dimensions in a vector, and s7_vector_dimension returns
@@ -9828,7 +9919,9 @@ const char *s7_string(s7_pointer p);
 s7_pointer s7_make_string(s7_scheme *sc, const char *str);
 s7_pointer s7_make_string_with_length(s7_scheme *sc, const char *str, s7_int len);
 s7_pointer s7_make_string_wrapper(s7_scheme *sc, const char *str);
+s7_pointer s7_make_string_wrapper_with_length(s7_scheme *sc, const char *str, s7_int len);
 s7_pointer s7_make_permanent_string(s7_scheme *sc, const char *str);
+s7_pointer s7_make_semipermanent_string(s7_scheme *sc, const char *str);
 s7_int s7_string_length(s7_pointer str);
 </pre>
 <p>These handle s7 strings.  s7_is_string corresponds to scheme's string?, 
@@ -9836,11 +9929,12 @@ and s7_string_length to scheme's string-length. s7_string returns the scheme str
 Don't free the returned string!  s7_make_string takes a C string, and returns its scheme
 equivalent.  s7_make_string_with_length is the same, but it is faster because you pass the
 new string's length (s7_make_string has to use strlen).  
-s7_make_permanent_string returns a scheme string that is not in the heap; it will never be GC'd.
+s7_make_permanent_string returns a scheme string that is not in the heap; it will never be GC'd or freed by s7.
+s7_make_semipermanent_string is similar, but the string will be freed if you call s7_free.
 s7_make_string_wrapper creates a temporary string.  This saves the overhead of getting a free cell
 from the heap and later GC-ing it, but the string may be reused at any time.  It is useful as
 an argument to s7_call and similar functions where you know no other strings will be needed
-during that call.
+during that call.  s7_make_string_wrapper_with_length is the same but passes in the string length.
 </p>
 
 
@@ -9928,6 +10022,8 @@ typedef s7_double (*s7_d_t)(void);
 void s7_set_d_function(s7_scheme *sc, s7_pointer f, s7_d_t df);
 s7_d_t s7_d_function(s7_pointer f);
 etc...
+
+s7_pfunc s7_optimize(s7_scheme *sc, s7_pointer expr);
 </pre>
 
 <p>
@@ -9983,6 +10079,64 @@ Don't use something dumb like call/cc.  Avoid append.  Use iteration, not recurs
 Perhaps take the hot spot and do it in C.  callgrind might also be helpful, but it 
 can be hard to map from callgrind output to the original scheme code.
 </p>
+<p>s7_optimize is the third-level optimizer.  It is a bit hard to explain,
+but basically you pass it some scheme code, and it returns either NULL or a function that can be called
+to evaluate that code.  There are several examples in snd-sig.c.
+Here's an example where we want to call <code>(list 1 2 3)</code> a bazillion times:
+</p>
+<pre class="indented">
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include "s7.h"
+int main(int argc, char **argv)
+{
+  s7_scheme *s = s7_init();
+  s7_pfunc f;
+  s7_pointer body;
+  s7_int gc_loc;
+  int i;
+  body = s7_list_nl(s, 4, s7_make_symbol(s, "list"),
+	                  s7_make_integer(s, 1),
+	                  s7_make_integer(s, 2),
+	                  s7_make_integer(s, 3),
+	                  NULL);
+  gc_loc = s7_gc_protect(s, body);
+  f = <em class="red">s7_optimize</em>(s, s7_list(s, 1, body));
+  if (!f) fprintf(stderr, "oops\n");
+  else
+    for (i = 0; i &lt; 2000000; i++)
+      <em class="red">f</em>(s);
+  s7_gc_unprotect_at(s, gc_loc);
+}
+</pre>
+<p>
+s7_optimize can also be used to take advantage of the direct
+C function calls mentioned above:
+</p>
+<pre class="indented">
+static s7_pointer g_d_func(s7_scheme *sc, s7_pointer args) 
+{
+  /* a normal C-defined s7 function that simply returns (scheme) 1.0 */
+  return(s7_make_real(sc, 1.0));
+}
+static s7_double opt_d_func(void) 
+{
+  /* a version of g_d_func that returns (C) 1.0 */
+  return(1.0);
+}
+
+/* now make it possible to call opt_d_func in place of g_d_func */
+s7_float_function func;
+s7_pointer symbol;
+
+symbol = s7_define_safe_function(sc, "d-func", g_d_func, 0, 0, false, "opt func");
+s7_set_d_function(sc, s7_name_to_value(sc, "d-func"), opt_d_func);
+
+/* and try it (this saves creating an s7 real, accessing its value, and GC-ing it eventually) */
+func = s7_float_optimize(sc, s7_list(sc, 1, s7_list(sc, 1, symbol)));
+fprintf(stderr, "%f\n", func(sc));
+</pre>
 
 
 <div class="shortheader" id="candsoon">And so on...</div>
@@ -10011,10 +10165,10 @@ bool s7_set_history_enabled(s7_scheme *sc, bool enabled);
 s7_pointer s7_dynamic_wind(s7_scheme *sc, s7_pointer init, s7_pointer body, s7_pointer finish);
 s7_pointer s7_make_continuation(s7_scheme *sc);
 s7_pointer s7_values(s7_scheme *sc, s7_pointer args);
+bool s7_is_multiple_value(s7_pointer obj);
 s7_pointer s7_copy(s7_scheme *sc, s7_pointer args);
 s7_pointer s7_fill(s7_scheme *sc, s7_pointer args);
 s7_pointer s7_type_of(s7_scheme *sc, s7_pointer arg);
-s7_pfunc s7_optimize(s7_scheme *sc, s7_pointer expr);
 bool s7_is_syntax(s7_pointer p);
 bool s7_is_valid(s7_scheme *sc, s7_pointer arg);
 
@@ -10024,7 +10178,8 @@ void s7_set_begin_hook(s7_scheme *sc, void (*hook)(s7_scheme *sc, bool *val));
 
 <p>s7_init creates a scheme interpreter.  The returned value is the s7_scheme* used by many of the FFI functions.
 s7_quit exits the interpreter.  The memory allocated for it by s7_init is not freed unless you call s7_free.
-(s7_free also frees its s7_scheme* argument).
+(s7_free also frees its s7_scheme* argument, you may need to call s7_quit before s7_free to clean up the C stack,
+and as in multithreaded cases, global variables may need to be reinitialized after calling s7_free).
 s7_repl fires up a REPL.
 s7_is_eq and friends correspond to scheme's eq?, eqv?, equal?, and equivalent?.  s7_provide and s7_is_provided
 add a symbol to the *features* list, or check for its presence there.
@@ -10037,16 +10192,37 @@ is an <a href="#signal">example</a> above.
 s7_values is values, s7_copy is copy, s7_fill is fill!, s7_type_of is type-of, s7_is_syntax
 is syntax?. 
 </p>
+<p>s7_is_multiple_value returns true if its argument (a list) is the result of
+calling values or s7_values.  (values) returns a special object that is eq? to 
+#&lt;unspecified&gt; but not C == to it (that is, there are two things in s7 that
+represent the unspecified object, one being the result of calling values with no
+arguments).  (values obj) returns obj, which is not considered a multiple-value.
+</p>
 <p>s7_is_valid is a debugging aid; it tries to tell if an arbitrary value is pointing to
 an s7 object.  Set the compile-time switch TRAP_SEGFAULT to 1 before using this function!
 </p>
-<p>s7_optimize is the third-level optimizer.  It is a bit hard to explain,
-but basically you pass it some scheme code, and it returns either NULL or a function that can be called
-to evaluate that code.  There are several examples in snd-sig.c.  
+<p>
 Finally, the begin_hook
 functions are explained <a href="#beginhook">above</a>.
 </p>
 
+<p>An example of s7_values:
+</p>
+<pre class="indented">
+static s7_pointer vals(s7_scheme *s, s7_pointer args)
+{
+  return(s7_values(s, args));
+}
+
+int main(int argc, char **argv) 
+{
+  s7_scheme *s = s7_init();
+  s7_define_function(s, "vals", vals, 0, 0, true, NULL);
+  s7_pointer e = s7_eval_c_string(s, "(+ (vals 1 2 3))");
+  s7_display(s, e, s7_current_output_port(s));
+  s7_newline(s, s7_current_output_port(s));
+}
+</pre>
 
 <br><br>
 
@@ -10228,8 +10404,17 @@ Here are some examples:
   "" '("sys/types.h" "dirent.h"))
 </pre>
 
+<p>C-init inserts its string argument into the initialization section of
+the module.  In libgsl.scm, for example,
+</p>
+<pre class="inserted">
+(C-init "gsl_set_error_handler(g_gsl_error);")
+</pre>
+<p>inserts that string (as C code) into libgsl_s7.c toward the beginning of the
+libgsl_s7_init function (line 42346 or so).
+</p>
 
-<p>For the simple cases above, include "-ldl -Wl,-export-dynamic" in the gcc command.  So the first
+<p>When compiling, for the simple cases above, include "-ldl -Wl,-export-dynamic" in the gcc command.  So the first
 FFI example is built (this is in Linux):
 </p>
 
@@ -10661,8 +10846,7 @@ or conjure up a wrapper:
 
 int main(int argc, char **argv)
 {
-  s7_scheme *sc;
-  sc = s7_init();
+  s7_scheme *sc = s7_init();
   s7_load(sc, "repl.scm");
   s7_eval_c_string(sc, "((*repl* 'run))");
   return(0);
@@ -10803,7 +10987,7 @@ Eventually I'll probably retire repl.scm.
 <p>Unlike repl, nrepl has support for the mouse, traversable, scrollable, and resizable panes, built-in ties to
 lint.scm, debug.scm, and profile.scm, and various other enhancements.
 Since it includes all the libc, notcurses FFI code, and nrepl.scm at compile-time, there
-are no problems running it anywhere.  To build nrepl: touch mus-config.h, then
+are no problems running it anywhere.  To build nrepl:
 </p>
 <pre class="indented">
 gcc -o nrepl s7.c -O2 -I. -Wl,-export-dynamic -lm -ldl -DWITH_MAIN -DWITH_NOTCURSES -lnotcurses-core
