@@ -37,10 +37,10 @@ cc_test(
         "//conditions:default": ["-std=c11"],
     }),
     defines = select({
-        "//bzl/host:debug": ["DEBUG_TRACE"],
+        "//config/host:debug": ["DEBUG_TRACE"],
         "//conditions:default":   []
     }) + select({
-        "//bzl/host:linux": [
+        "//config/host:linux": [
             "_XOPEN_SOURCE=500", # strdup
             "_DEFAULT_SOURCE"    # dirent DT_* macros
         ],

@@ -120,8 +120,8 @@ cc_library(
 #         "WITH_SYSTEM_EXTRAS"
 #     ],
 #     linkopts = select({
-#         "//bzl/host:macos": [],
-#         "//bzl/host:linux": ["-ldl", "-Wl,-export-dynamic"],
+#         "//config/host:macos": [],
+#         "//config/host:linux": ["-ldl", "-Wl,-export-dynamic"],
 #         "//conditions:default": []
 #     }) + [
 #         "-lm"
