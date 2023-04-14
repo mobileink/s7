@@ -116,14 +116,15 @@ for i in "${s7_c_types[@]}"; do
 done
 
 s7_characters=(
-    s7_characters
+    s7_c_characters
+
     s7_is_character
     s7_character
     s7_make_character
 )
 for i in "${s7_characters[@]}"; do
     echo $i
-    ln -s $MAN3DIR/s7_characters.3 ${HOME}/man/man3/$i.3
+    ln -s $MAN3DIR/s7_c_characters.3 ${HOME}/man/man3/$i.3
 done
 
 # s7_datatypes=(
@@ -493,6 +494,7 @@ s7_c_nulls=(
     s7_c_nulls
 
     s7_nil
+    s7_null
     s7_undefined
     s7_unspecified
     s7_is_unspecified

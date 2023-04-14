@@ -1,5 +1,10 @@
 # load("@rules_cc//cc:defs.bzl", "cc_binary")
 
+filegroup(
+    name = "scm",
+    data = glob(["*.scm"])
+)
+
 ###########
 cc_library(
     name  = "s7",
@@ -20,6 +25,11 @@ cc_library(
         # "-Wextra",
         "-I$(GENDIR)/s7"
     ],
+    data = glob(["*.scm"]) + ["s7.h"],
+    defines = [
+        # "WITH_MAIN"
+        "WITH_C_LOADER",
+    ],
     linkopts = select({
         # "//:macos": ["-std=c11"],
         # "//:linux": ["-std=gnu11"],
@@ -32,7 +42,7 @@ cc_library(
 ## linux: gcc -o repl repl.c s7.o -Wl,-export-dynamic -lm -I. -ldl
 cc_binary(
     name  = "repl",
-    srcs  = ["s7.c", "mus-config.h"],
+    srcs  = ["repl.c", "mus-config.h"],
     copts = select({
         # "//:bsd": ["-std=c11"],
         "//:macos": ["-std=c11"],
@@ -50,10 +60,11 @@ cc_binary(
         # "-pedantic-errors",
         # "-Wextra",
         "-O2", "-g",
+        "-I.",
         "-I$(GENDIR)/s7"
     ],
-    defines = ["WITH_MAIN"],
-    deps = [":s7"],
+    data = [":scm"],
+    deps = [":s7"], ## ":c_s7"],
     linkopts = select({
         # "//:bsd": ["-Wl,-export-dynamic"],
         "//:macos": [],
@@ -73,8 +84,48 @@ genrule(
 )
 
 
+cc_binary(
+    name  = "c_s7",  # create libc_s7
+    linkshared = True,
+    srcs  = ["libc_s7.c", "s7.h"],
+    copts = select({
+        # strdup is non-standard, not supported on linux in strict c11 mode
+        "//bzl/host:macos": ["-std=c11"],
+        "//bzl/host:linux": ["-std=gnu11"],
+        "//conditions:default": ["-std=c11"],
+    }) + [
+        "-Wextra",
+        "-Wno-unused-parameter",
+        # "-Ivendored/linenoise",
+        "-O2", "-g",
+        "-Isrc",
+        "-Ivendored/linenoise",
+    ],
+    defines = [
+        "WITH_SYSTEM_EXTRAS"
+    ],
+    linkopts = select({
+        "//bzl/host:macos": [],
+        "//bzl/host:linux": ["-ldl", "-Wl,-export-dynamic"],
+        "//conditions:default": []
+    }) + [
+        "-lm"
+    ],
+    visibility = ["//visibility:public"]
+)
+
 ##########
 ## nrepl depends on notcurses, which is yet another big hairy lib
+
+# deps: libdeflate-dev libncurses-dev libunistring-dev
+
+# libgpm: general purpose mouse GPL v2
+
+# multimedia support: libavformat-dev libavutil-dev libswscale-dev
+# qrcode support:  libqrcodegen-dev
+# other stuff we don't need:  install build-essential cmake doctest-dev pandoc pkg-config
+# GPL: libgpm-dev
+
 # cc_binary(
 #     name  = "nrepl",
 #     srcs  = ["nrepl.c", "notcurses_s7.c", "s7.h"],
