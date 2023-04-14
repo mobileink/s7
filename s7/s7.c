@@ -62,13 +62,13 @@
  * ---------------- compile time switches ----------------
  */
 
-#if defined __has_include
-#  if __has_include ("mus-config.h")
-#    include "mus-config.h"
-#  endif
-#else
-  #include "mus-config.h"
-#endif
+/* #if defined __has_include */
+/* #  if __has_include ("mus-config.h") */
+/* #    include "mus-config.h" */
+/* #  endif */
+/* #else */
+/*   #include "mus-config.h" */
+/* #endif */
 
 /*
  * Your config file goes here, or just replace that #include line with the defines you need.
@@ -72378,6 +72378,7 @@ static s7_pointer check_lambda_star_args(s7_scheme *sc, s7_pointer args, s7_poin
 {
   s7_pointer top, v, w;
   int32_t i;
+  (void)i; /* prevent warning: variable 'i' set but not used [-Wunused-but-set-variable] */
   bool has_defaults;
 
   if (!is_list(args))
@@ -75296,7 +75297,7 @@ static Inline void inline_op_let_a_old(s7_scheme *sc)  /* tset(2) fb(0) cb(4) le
   set_curlet(sc, let);
 }
 
-static inline void op_let_a_old(s7_scheme *sc) {return(inline_op_let_a_old(sc));}
+static inline void op_let_a_old(s7_scheme *sc) {(inline_op_let_a_old(sc));}
 
 static void op_let_a_a_new(s7_scheme *sc)
 {

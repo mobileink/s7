@@ -1,0 +1,51 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+cc_test(
+    name = "test",
+    srcs = ["s7_test.c"],
+    copts = [
+        "-std=c11",
+        "-pedantic-errors",
+        "-Wall",
+        "-Werror",
+
+        "-Is7",
+
+        "-Ivendored/gopt",
+        "-Iexternal/mibl/vendored/gopt",
+
+        "-Ivendored/logc",
+        "-Iexternal/mibl/vendored/logc",
+
+        "-Ivendored/unity",
+        "-Iexternal/mibl/vendored/unity",
+
+        "-Ivendored/uthash",
+        "-Iexternal/mibl/vendored/uthash",
+    ] + select({
+        "//bzl/host:debug": [""],
+        "//conditions:default":   []
+    }) + select({
+        ## macos fastbuild: -UDEBUG
+        "//conditions:default":   []
+    }),
+    defines = select({
+        "//bzl/host:debug": ["DEBUG_TRACE", "DEBUG_MIBL"],
+        "//conditions:default":   []
+    }) + select({
+        "//bzl/host:linux": [
+            "_XOPEN_SOURCE=500", # strdup
+            "_DEFAULT_SOURCE"    # dirent DT_* macros
+        ],
+        "//conditions:default":   []
+    }),
+    deps = [
+        "//s7:s7",
+        "//vendored/gopt",
+        "//vendored/logc",
+        "//vendored/unity",
+        "//vendored/uthash",
+    ],
+    timeout = "short",
+    visibility = ["//test:__subpackages__"]
+)

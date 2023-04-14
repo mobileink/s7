@@ -5,36 +5,287 @@ filegroup(
     data = glob(["*.scm"])
 )
 
+## build targets: s7, libc_s7, repl, nrepl
+
+# WITH_SYSTEM_EXTRAS
+  # is_directory_symbol, file_exists_symbol, delete_file_symbol,
+  # getenv_symbol, system_symbol,
+  # directory_to_list_symbol,
+  # file_mtime_symbol
+
 ###########
 cc_library(
     name  = "s7",
     # linkstatic = 0,
-    srcs  = ["s7.c", "mus-config.h"],
+    srcs  = ["s7.c", "libc_s7.c", "libdl_s7.c", "libm_s7.c"],
     hdrs  = ["s7.h"],
-    copts = select({
-        # "//:macos": [
-        #     "-std=c11"
-        #     # -fsanitize=address
-        #     # -lasan
-        #     # -fsanitize=bounds
-        # ],
-        # "//:linux": ["-std=gnu11"],
+    copts = [
+        "-Wall",
+        "-Wextra",
+        "-Werror=pedantic",
+        "-Wno-unused-parameter",
+        "-Wno-format-pedantic",
+        "-Isrc",
+    ] + select({
+        "//:macos": [
+            "-Wno-gnu",
+            "-std=c11"
+        ],
+        "//:linux": [
+            "-std=gnu11",
+            "-Wpedantic-errors",
+        ],
         "//conditions:default": ["-std=c11"],
-    }) + [
-        # "-pedantic-errors",
-        # "-Wextra",
-        "-I$(GENDIR)/s7"
-    ],
+    }),
     data = glob(["*.scm"]) + ["s7.h"],
     defines = [
         # "WITH_MAIN"
-        "WITH_C_LOADER",
-    ],
+        "WITH_SYSTEM_EXTRAS"
+        # "WITH_C_LOADER",
+    ] + select({
+        # "//config/s7:debug?": ["S7_DEBUGGING"],
+        "//conditions:default":   []
+    }),
     linkopts = select({
         # "//:macos": ["-std=c11"],
-        # "//:linux": ["-std=gnu11"],
+        "//:linux": ["-lm"],
         "//conditions:default": []
-    }) + ["-lm"],
+    }),
+    visibility = ["//visibility:public"]
+)
+
+cc_library(
+    name  = "c_s7",
+    # linkstatic = 0,
+    srcs  = ["libc_s7.c"],
+    hdrs  = ["s7.h"],
+    copts = [
+        "-Wall",
+        "-Wextra",
+        "-Werror=pedantic",
+        "-Wno-unused-parameter",
+        "-Wno-format-pedantic",
+        "-Isrc",
+    ] + select({
+        "//:macos": [
+            "-Wno-gnu",
+            "-std=c11"
+        ],
+        "//:linux": [
+            "-std=gnu11",
+            "-Wpedantic-errors",
+        ],
+        "//conditions:default": ["-std=c11"],
+    }),
+    data = glob(["*.scm"]) + ["s7.h"],
+    defines = [
+        # "WITH_MAIN"
+        "WITH_SYSTEM_EXTRAS"
+        # "WITH_C_LOADER",
+    ] + select({
+        # "//config/s7:debug?": ["S7_DEBUGGING"],
+        "//conditions:default":   []
+    }),
+    linkopts = select({
+        # "//:macos": ["-std=c11"],
+        "//:linux": ["-lm"],
+        "//conditions:default": []
+    }),
+    visibility = ["//visibility:public"]
+)
+
+# cc_binary(
+#     name  = "c_s7",  # create libc_s7
+#     # linkshared = True,
+#     srcs  = ["libc_s7.c", "s7.h"],
+#     copts = [
+#         "-Wall",
+#         "-Wextra",
+#         "-Werror=pedantic",
+#         "-Wno-unused-parameter",
+#         "-Wno-format-pedantic",
+#         "-Isrc",
+#     ] + select({
+#         "//:macos": [
+#             "-Wno-gnu",
+#             "-std=c11"
+#         ],
+#         "//:linux": [
+#             "-std=gnu11",
+#             "-Wpedantic-errors",
+#         ],
+#         "//conditions:default": ["-std=c11"],
+#     }),
+#     defines = [
+#         "WITH_SYSTEM_EXTRAS"
+#     ],
+#     linkopts = select({
+#         "//bzl/host:macos": [],
+#         "//bzl/host:linux": ["-ldl", "-Wl,-export-dynamic"],
+#         "//conditions:default": []
+#     }) + [
+#         "-lm"
+#     ],
+#     visibility = ["//visibility:public"]
+# )
+
+cc_library(
+    name  = "dl_s7",
+    # linkstatic = 0,
+    srcs  = ["libdl_s7.c"],
+    hdrs  = ["s7.h"],
+    copts = [
+        "-Wall",
+        "-Wextra",
+        "-Werror=pedantic",
+        "-Wno-unused-parameter",
+        "-Wno-format-pedantic",
+        "-Isrc",
+    ] + select({
+        "//:macos": [
+            "-Wno-gnu",
+            "-std=c11"
+        ],
+        "//:linux": [
+            "-std=gnu11",
+            "-Wpedantic-errors",
+        ],
+        "//conditions:default": ["-std=c11"],
+    }),
+    data = glob(["*.scm"]) + ["s7.h"],
+    defines = [
+        # "WITH_MAIN"
+        "WITH_SYSTEM_EXTRAS"
+        # "WITH_C_LOADER",
+    ] + select({
+        # "//config/s7:debug?": ["S7_DEBUGGING"],
+        "//conditions:default":   []
+    }),
+    linkopts = select({
+        # "//:macos": ["-std=c11"],
+        "//:linux": ["-lm"],
+        "//conditions:default": []
+    }),
+    visibility = ["//visibility:public"]
+)
+
+cc_library(
+    name  = "gdbm_s7",
+    # linkstatic = 0,
+    srcs  = ["libgdbm_s7.c"],
+    hdrs  = ["s7.h"],
+    copts = [
+        "-Wall",
+        "-Wextra",
+        "-Werror=pedantic",
+        "-Wno-unused-parameter",
+        "-Wno-format-pedantic",
+        "-Isrc",
+    ] + select({
+        "//:macos": [
+            "-Wno-gnu",
+            "-std=c11"
+        ],
+        "//:linux": [
+            "-std=gnu11",
+            "-Wpedantic-errors",
+        ],
+        "//conditions:default": ["-std=c11"],
+    }),
+    data = glob(["*.scm"]) + ["s7.h"],
+    defines = [
+        # "WITH_MAIN"
+        "WITH_SYSTEM_EXTRAS"
+        # "WITH_C_LOADER",
+    ] + select({
+        # "//config/s7:debug?": ["S7_DEBUGGING"],
+        "//conditions:default":   []
+    }),
+    linkopts = select({
+        # "//:macos": ["-std=c11"],
+        "//:linux": ["-lm"],
+        "//conditions:default": []
+    }),
+    visibility = ["//visibility:public"]
+)
+
+cc_library(
+    name  = "m_s7",
+    # linkstatic = 0,
+    srcs  = ["libgdbm_s7.c"],
+    hdrs  = ["s7.h"],
+    copts = [
+        "-Wall",
+        "-Wextra",
+        "-Werror=pedantic",
+        "-Wno-unused-parameter",
+        "-Wno-format-pedantic",
+        "-Isrc",
+    ] + select({
+        "//:macos": [
+            "-Wno-gnu",
+            "-std=c11"
+        ],
+        "//:linux": [
+            "-std=gnu11",
+            "-Wpedantic-errors",
+        ],
+        "//conditions:default": ["-std=c11"],
+    }),
+    data = glob(["*.scm"]) + ["s7.h"],
+    defines = [
+        # "WITH_MAIN"
+        "WITH_SYSTEM_EXTRAS"
+        # "WITH_C_LOADER",
+    ] + select({
+        # "//config/s7:debug?": ["S7_DEBUGGING"],
+        "//conditions:default":   []
+    }),
+    linkopts = select({
+        # "//:macos": ["-std=c11"],
+        "//:linux": ["-lm"],
+        "//conditions:default": []
+    }),
+    visibility = ["//visibility:public"]
+)
+
+cc_library(
+    name  = "utf8proc_s7",
+    # linkstatic = 0,
+    srcs  = ["libutf8proc_s7.c"],
+    hdrs  = ["s7.h"],
+    copts = [
+        "-Wall",
+        "-Wextra",
+        "-Werror=pedantic",
+        "-Wno-unused-parameter",
+        "-Wno-format-pedantic",
+        "-Isrc",
+    ] + select({
+        "//:macos": [
+            "-Wno-gnu",
+            "-std=c11"
+        ],
+        "//:linux": [
+            "-std=gnu11",
+            "-Wpedantic-errors",
+        ],
+        "//conditions:default": ["-std=c11"],
+    }),
+    data = glob(["*.scm"]) + ["s7.h"],
+    defines = [
+        # "WITH_MAIN"
+        "WITH_SYSTEM_EXTRAS"
+        # "WITH_C_LOADER",
+    ] + select({
+        # "//config/s7:debug?": ["S7_DEBUGGING"],
+        "//conditions:default":   []
+    }),
+    linkopts = select({
+        # "//:macos": ["-std=c11"],
+        "//:linux": ["-lm"],
+        "//conditions:default": []
+    }),
     visibility = ["//visibility:public"]
 )
 
@@ -73,43 +324,6 @@ cc_binary(
         "//conditions:default": []
     }) + [
         "-lm",
-    ],
-    visibility = ["//visibility:public"]
-)
-
-genrule(
-    name = "mus-config",
-    outs = ["mus-config.h"],
-    cmd = "touch $@"
-)
-
-
-cc_binary(
-    name  = "c_s7",  # create libc_s7
-    linkshared = True,
-    srcs  = ["libc_s7.c", "s7.h"],
-    copts = select({
-        # strdup is non-standard, not supported on linux in strict c11 mode
-        "//bzl/host:macos": ["-std=c11"],
-        "//bzl/host:linux": ["-std=gnu11"],
-        "//conditions:default": ["-std=c11"],
-    }) + [
-        "-Wextra",
-        "-Wno-unused-parameter",
-        # "-Ivendored/linenoise",
-        "-O2", "-g",
-        "-Isrc",
-        "-Ivendored/linenoise",
-    ],
-    defines = [
-        "WITH_SYSTEM_EXTRAS"
-    ],
-    linkopts = select({
-        "//bzl/host:macos": [],
-        "//bzl/host:linux": ["-ldl", "-Wl,-export-dynamic"],
-        "//conditions:default": []
-    }) + [
-        "-lm"
     ],
     visibility = ["//visibility:public"]
 )
