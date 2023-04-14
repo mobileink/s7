@@ -16,24 +16,25 @@ filegroup(
 ###########
 cc_library(
     name  = "s7",
-    # linkstatic = 0,
+    linkstatic = 0,
     srcs  = ["s7.c", "libc_s7.c", "libdl_s7.c", "libm_s7.c"],
     hdrs  = ["s7.h"],
     copts = [
         "-Wall",
         "-Wextra",
-        "-Werror=pedantic",
+        # "-Werror=pedantic",
         "-Wno-unused-parameter",
-        "-Wno-format-pedantic",
         "-Isrc",
     ] + select({
         "//:macos": [
+            "-Wno-format-pedantic",
             "-Wno-gnu",
             "-std=c11"
         ],
         "//:linux": [
             "-std=gnu11",
-            "-Wpedantic-errors",
+            "-Wno-unused-function",
+            # "--pedantic-errors",
         ],
         "//conditions:default": ["-std=c11"],
     }),
@@ -47,7 +48,7 @@ cc_library(
         "//conditions:default":   []
     }),
     linkopts = select({
-        # "//:macos": ["-std=c11"],
+        "//:macos": ["-ldl"],
         "//:linux": ["-lm"],
         "//conditions:default": []
     }),
@@ -112,7 +113,7 @@ cc_library(
 #         ],
 #         "//:linux": [
 #             "-std=gnu11",
-#             "-Wpedantic-errors",
+#             "--pedantic-errors",
 #         ],
 #         "//conditions:default": ["-std=c11"],
 #     }),
@@ -148,7 +149,7 @@ cc_library(
         ],
         "//:linux": [
             "-std=gnu11",
-            "-Wpedantic-errors",
+            "--pedantic-errors",
         ],
         "//conditions:default": ["-std=c11"],
     }),
@@ -188,7 +189,7 @@ cc_library(
         ],
         "//:linux": [
             "-std=gnu11",
-            "-Wpedantic-errors",
+            "--pedantic-errors",
         ],
         "//conditions:default": ["-std=c11"],
     }),
@@ -228,7 +229,7 @@ cc_library(
         ],
         "//:linux": [
             "-std=gnu11",
-            "-Wpedantic-errors",
+            "--pedantic-errors",
         ],
         "//conditions:default": ["-std=c11"],
     }),
@@ -268,7 +269,7 @@ cc_library(
         ],
         "//:linux": [
             "-std=gnu11",
-            "-Wpedantic-errors",
+            "--pedantic-errors",
         ],
         "//conditions:default": ["-std=c11"],
     }),
