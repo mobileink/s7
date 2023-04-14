@@ -4,33 +4,40 @@ cc_test(
     name = "test",
     srcs = ["s7_test.c"],
     copts = [
-        "-std=c11",
-        "-pedantic-errors",
         "-Wall",
-        "-Werror",
+        "-Wextra",
+        "-Werror=pedantic",
+        "-Wno-unused-parameter",
+        "-Wno-format-pedantic",
 
         "-Is7",
+        "-Iexternal/s7/s7",
 
         "-Ivendored/gopt",
-        "-Iexternal/mibl/vendored/gopt",
+        "-Iexternal/s7/vendored/gopt",
 
         "-Ivendored/logc",
-        "-Iexternal/mibl/vendored/logc",
+        "-Iexternal/s7/vendored/logc",
 
         "-Ivendored/unity",
-        "-Iexternal/mibl/vendored/unity",
+        "-Iexternal/s7/vendored/unity",
 
         "-Ivendored/uthash",
-        "-Iexternal/mibl/vendored/uthash",
+        "-Iexternal/s7/vendored/uthash",
+
     ] + select({
-        "//bzl/host:debug": [""],
-        "//conditions:default":   []
-    }) + select({
-        ## macos fastbuild: -UDEBUG
-        "//conditions:default":   []
+        "//:macos": [
+            "-Wno-gnu",
+            "-std=c11"
+        ],
+        "//:linux": [
+            "-std=gnu11",
+            "-Wpedantic-errors",
+        ],
+        "//conditions:default": ["-std=c11"],
     }),
     defines = select({
-        "//bzl/host:debug": ["DEBUG_TRACE", "DEBUG_MIBL"],
+        "//bzl/host:debug": ["DEBUG_TRACE"],
         "//conditions:default":   []
     }) + select({
         "//bzl/host:linux": [
