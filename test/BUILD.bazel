@@ -32,7 +32,7 @@ cc_test(
         ],
         "//:linux": [
             "-std=gnu11",
-            "-Wpedantic-errors",
+            "--pedantic-errors",
         ],
         "//conditions:default": ["-std=c11"],
     }),
@@ -45,6 +45,11 @@ cc_test(
             "_DEFAULT_SOURCE"    # dirent DT_* macros
         ],
         "//conditions:default":   []
+    }),
+    linkopts = select({
+        "//:macos": ["-ldl"],
+        "//:linux": ["-lm", "-ldl"],
+        "//conditions:default": []
     }),
     deps = [
         "//s7:s7",
