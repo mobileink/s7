@@ -42,6 +42,16 @@ void tearDown(void) {
     /* log_info("teardown"); */
 }
 
+void test_libc(void) {
+    sexp_actual = "(fnmatch \"*.c\" \"s7.c\" FNM_PATHNAME)";
+    sexp_expected = "0";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "%s", sexp_actual);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+}
+
 void test_math(void) {
     sexp_actual = "(+ 2 3)";
     sexp_expected = "5";
@@ -280,6 +290,7 @@ int main(int argc, char **argv)
 
     UNITY_BEGIN();
 
+    RUN_TEST(test_libc);
     RUN_TEST(test_math);
     RUN_TEST(test_libm);
     RUN_TEST(test_regex);
