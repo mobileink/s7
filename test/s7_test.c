@@ -129,6 +129,39 @@ void test_regex(void) {
     actual = s7_eval_c_string(s7, utstring_body(sexp));
     expected = s7_eval_c_string(s7, sexp_expected);
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    /* from s7test.scm */
+    /* not on macos: */
+    /* sexp_actual = "" */
+    /*     "(let* ((rg (regex.make)) " */
+    /*     "       (_ (regcomp rg \"colou\\?r\" 0))) " */
+    /*     "   (let ((res (regexec rg \"The color green\" 1 0))) " */
+    /*     "      (regfree rg) " */
+    /*     "      res))" */
+    /*     ; */
+    /* sexp_expected = "#i(4 9)"; */
+    /* utstring_renew(sexp); */
+    /* utstring_printf(sexp, "%s", sexp_actual); */
+    /* actual = s7_eval_c_string(s7, utstring_body(sexp)); */
+    /* expected = s7_eval_c_string(s7, sexp_expected); */
+    /* TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected)); */
+
+#   define regex2 "\"(ba(na)*s |nefer(ti)* )*\""
+    sexp_actual = ""
+        "(let* ((s \"bananas nefertiti\") "
+        "       (rg (regex.make)) "
+        "       (_ (regcomp rg " regex2 " REG_EXTENDED)) "
+        "       (nmatch 3)) "
+        "   (let ((res (regexec rg s nmatch 0))) "
+        "      (regfree rg) "
+        "      res))"
+        ;
+    sexp_expected = "#i(0 8 0 8 4 6)";
+    utstring_renew(sexp);
+    utstring_printf(sexp, "%s", sexp_actual);
+    actual = s7_eval_c_string(s7, utstring_body(sexp));
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 }
 
 void _print_usage(void) {
