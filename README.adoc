@@ -1,0 +1,143 @@
+= s7
+
+s7 is a Scheme interpreter.
+
+**IMPORTANT**: [This](https://github.com/mobileink/s7) is a fork of https://cm-gitlab.stanford.edu/bil/s7.
+
+
+
+The original repo is on branch 'master'.
+
+The original README and source code is on this branch in [s7/](s7).
+
+== changes
+
+Dynamic compile-and-load of C code is disabled. This removes 'dlopen'
+from the API.  We provide it separately.
+
+=== cload
+
+WARNING: Disabled.
+
+Standard `s7` can dynamiclly define, compile and load C code. Its a
+clever feature but it introduces a runtime dependency on a C compiler,
+which means non-hermetic builds, not to mention security risks. So we
+disable this mechanism by making `cload.scm` throw an error at load
+time.
+
+`cload.scm` defines `c-define`, `in-c` etc. Used only in `lib*.scm` files; not
+used in s7.c or libc_s7.c
+
+We define all such wrapper libs statically. For example, `libdl.scm`
+uses `c-define` to expose `dlopen`, `dlclose`, etc. We replace this
+with `libdl.c`, which does the same thing using the s7 C API.
+
+This is a simple matter of loading the legacy `lib*.scm` files, which
+has the side-effect of generating the corrersponding C files. We just
+save those C files and dispense with the dynamic stuff.
+
+Macro: CLOAD_DIR
+
+=== libc_s7
+
+In the standard distibution, loading `libc.scm` causes `s7` to emit
+`libc_s7.c`, then compile and load it.
+
+We keep the source and build it as a shared lib.
+
+
+
+== Configuration macros
+
+=== WITH_SYSTEM_EXTRAS
+
+Enables some libc functions:
+
+is_directory_symbol, file_exists_symbol, delete_file_symbol,
+getenv_symbol, system_symbol,
+directory_to_list_symbol,
+file_mtime_symbol
+
+==== WITH_C_LOADER
+
+Effectively means "shared lib loader". Enables:
+
+* dlopen
+* load_shared_object - uses dlopen to load .so|.dylib files
+* plain repl (loads libc_s7.so)
+
+static block_t *full_filename(s7_scheme *sc, const char *filename)
+static s7_pointer load_shared_object(s7_scheme *sc, const char *fname, s7_pointer let)
+
+In s7_load_with_environment, g_load (for (load ...))
+
+#if WITH_C_LOADER
+  port = load_shared_object(sc, filename, (is_null(e)) ? sc->rootlet : e);
+  if (port) return(port);
+#endif
+
+#if WITH_C_LOADER
+  s7_provide(sc, "dlopen");
+#endif
+
+in s7_repl, to load plain repl (not nrepl)
+
+static char *realdir(const char *filename) - for finding libc_s7
+
+==== S7_LOAD_PATH
+
+Env var; if set, that's where libc_s7 lives.
+
+==== S7_DEBUGGING
+
+To enable pass `--//s7:debug`
+
+
+== docs
+
+=== manpages
+
+You can open them by file path:
+
+`$ man ./man/man7/s7.7`
+
+Or you can put them on the manpath:
+
+* MacOS looks for man directories beside the directories that are on
+  the path; run `manpath -d` to see this. So the easy way to add the
+  manpages is to add `~/bin` to your path, and softlink the s7
+  manpages to `~/man`. So if you've cloned s7 to `~/s7`:
+
+```
+~/ $ mkdir man
+~/ $ cd man
+~/ $ ln -s ../s7/man3 man/
+~/ $ ln -s ../s7/man7 man/
+```
+
+[NB: You can also use absolute paths; but this will not work: `~/ $ ln -s s7/man/man3 man/`. The link becomes `man7 => s7/man7` which won't resolve.]
+
+== demo code
+
+Currently there is just one simple demo, demonstrating some of "load" capabilities:
+
+`$ bazel run demos:driver -- -d 1`
+
+NB: don't forget the double-dash `--`.
+
+A more complete (but still unfinished) demo is:
+
+`$ bazel run demos/cstruct:driver`
+
+It exports a C struct and exercises a good portion of the API.
+Eventually I'd like to turn it into a template for generating new s7
+extension projects. For now, I use it for exploring the API, so it has
+lots of log messages, and the Scheme file (demos/cstruct/cstruct.scm)
+has a bunch of code for exploring the API.
+
+## tests
+
+`test/g_block` contains C code extracted from `s7/s7test.scm`. To run:
+
+`$ bazel run test/g_block`
+
